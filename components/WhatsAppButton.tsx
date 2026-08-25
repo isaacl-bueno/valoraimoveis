@@ -1,9 +1,10 @@
 import { WhatsAppIcon } from "@/components/icons/brands";
+import { whatsappLink } from "@/lib/contact";
 
 export function WhatsAppButton() {
   return (
     <a
-      href="https://wa.me/5500000000000"
+      href={whatsappLink()}
       target="_blank"
       rel="noreferrer"
       className="fixed bottom-8 right-8 z-[100] w-16 h-16 bg-[#25D366] text-white rounded-full flex items-center justify-center shadow-2xl hover:scale-110 transition-transform duration-300 group"

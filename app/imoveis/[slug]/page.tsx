@@ -4,6 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { FavoriteToggleButton } from "@/components/FavoriteToggleButton";
 import { SiteShell } from "@/components/SiteShell";
+import { contact, whatsappLink } from "@/lib/contact";
 import { formatArea } from "@/lib/format";
 import { getPropertyBySlug, listProperties } from "@/lib/store";
 
@@ -31,9 +32,9 @@ export default async function PropertyDetailsPage({ params }: PageProps) {
     : property.image
       ? [property.image]
       : [];
-  const whatsapp = `https://wa.me/5500000000000?text=${encodeURIComponent(
+  const whatsapp = whatsappLink(
     `Olá, tenho interesse no imóvel ${property.title} (Ref: ${property.ref}) e gostaria de mais informações.`,
-  )}`;
+  );
 
   return (
     <SiteShell>
@@ -255,7 +256,7 @@ export default async function PropertyDetailsPage({ params }: PageProps) {
                 <p className="text-xs font-medium text-muted">Prefere nos ligar?</p>
                 <p className="text-lg font-bold text-ink flex items-center gap-2">
                   <i className="fa-solid fa-phone text-brand text-sm" />
-                  (11) 4003-0000
+                  {contact.phoneDisplay}
                 </p>
               </div>
             </div>

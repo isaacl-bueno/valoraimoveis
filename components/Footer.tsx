@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { contact } from "@/lib/contact";
 
 export function Footer() {
   return (
@@ -79,18 +80,18 @@ export function Footer() {
               <li className="flex items-start gap-3">
                 <i className="fa-solid fa-location-dot mt-1 text-brand" />
                 <span>
-                  Av. Paulista, 1000 - 12º Andar
+                  {contact.addressLine1}
                   <br />
-                  São Paulo, SP
+                  {contact.cityState}
                 </span>
               </li>
               <li className="flex items-center gap-3">
                 <i className="fa-solid fa-phone text-brand" />
-                <span>(11) 4003-0000</span>
+                <span>{contact.phoneDisplay}</span>
               </li>
               <li className="flex items-center gap-3">
                 <i className="fa-solid fa-envelope text-brand" />
-                <span>contato@valoraimoveis.com.br</span>
+                <span>{contact.email}</span>
               </li>
             </ul>
           </div>
@@ -100,9 +101,9 @@ export function Footer() {
               Informações
             </h4>
             <ul className="space-y-4 text-sm text-muted-foreground">
-              <li>CRECI: 12.345-J</li>
-              <li>Segunda a Sexta: 09h às 19h</li>
-              <li>Sábado: 09h às 13h</li>
+              <li>{contact.creci}</li>
+              <li>{contact.hoursWeekday}</li>
+              <li>{contact.hoursSaturday}</li>
             </ul>
           </div>
         </div>

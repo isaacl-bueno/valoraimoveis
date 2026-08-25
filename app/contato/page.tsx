@@ -13,6 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { contact, whatsappLink } from "@/lib/contact";
 
 export default function ContatoPage() {
   const [sent, setSent] = useState(false);
@@ -54,7 +55,7 @@ export default function ContatoPage() {
                 <div className="grid md:grid-cols-2 gap-5">
                   <div>
                     <Label>Telefone</Label>
-                    <Input placeholder="(47) 99999-9999" />
+                    <Input placeholder="(41) 99999-9999" />
                   </div>
                   <div>
                     <Label>Assunto</Label>
@@ -91,9 +92,9 @@ export default function ContatoPage() {
                     <div>
                       <p className="font-bold">Endereço</p>
                       <p className="text-muted-foreground text-sm mt-1">
-                        Rua 25 de Julho, 786 — Vila Nova
+                        {contact.addressLine1}
                         <br />
-                        Jaraguá do Sul/SC
+                        {contact.addressLine2}
                       </p>
                     </div>
                   </div>
@@ -103,7 +104,7 @@ export default function ContatoPage() {
                     </span>
                     <div>
                       <p className="font-bold">WhatsApp</p>
-                      <p className="text-muted-foreground text-sm mt-1">(47) 99925-5583</p>
+                      <p className="text-muted-foreground text-sm mt-1">{contact.whatsappDisplay}</p>
                     </div>
                   </div>
                   <div className="flex gap-4">
@@ -112,7 +113,7 @@ export default function ContatoPage() {
                     </span>
                     <div>
                       <p className="font-bold">E-mail</p>
-                      <p className="text-muted-foreground text-sm mt-1">contato@valoraimoveis.com</p>
+                      <p className="text-muted-foreground text-sm mt-1">{contact.email}</p>
                     </div>
                   </div>
                   <div className="flex gap-4">
@@ -121,13 +122,13 @@ export default function ContatoPage() {
                     </span>
                     <div>
                       <p className="font-bold">Atendimento</p>
-                      <p className="text-muted-foreground text-sm mt-1">Segunda a sexta, 09h às 18h</p>
+                      <p className="text-muted-foreground text-sm mt-1">{contact.hoursWeekday}</p>
                     </div>
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-3 mt-8">
                   <a
-                    href="https://wa.me/5547999255583"
+                    href={whatsappLink()}
                     target="_blank"
                     rel="noreferrer"
                     className="bg-brand text-white px-5 py-3 rounded-full text-sm font-bold"
@@ -135,7 +136,7 @@ export default function ContatoPage() {
                     Falar pelo WhatsApp
                   </a>
                   <a
-                    href="https://maps.google.com"
+                    href={contact.mapsUrl}
                     target="_blank"
                     rel="noreferrer"
                     className="bg-white border border-line px-5 py-3 rounded-full text-sm font-bold"
@@ -159,7 +160,7 @@ export default function ContatoPage() {
                       <i className="fa-solid fa-location-dot" />
                     </span>
                     <p className="mt-3 font-bold">Valora Imóveis</p>
-                    <p className="text-xs text-muted-foreground">Jaraguá do Sul, SC</p>
+                    <p className="text-xs text-muted-foreground">{contact.cityState}</p>
                   </div>
                 </div>
               </div>
