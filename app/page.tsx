@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { HeroSearch } from "@/components/HeroSearch";
 import { PropertyCard } from "@/components/PropertyCard";
@@ -18,10 +19,13 @@ export default async function HomePage() {
     <SiteShell>
       <header id="hero" className="relative min-h-svh overflow-hidden">
         <div className="absolute inset-0 z-0">
-          <img
-            className="w-full h-full object-cover"
+          <Image
+            className="object-cover"
             src="/heroimages/home-hero.png"
             alt="Residência contemporânea em concreto e vidro"
+            fill
+            priority
+            sizes="100vw"
           />
           <div className="absolute inset-0 bg-gradient-to-b from-ink/40 via-transparent to-ink/80" />
         </div>
@@ -62,11 +66,15 @@ export default async function HomePage() {
                 href={`/imoveis/${featured.slug}`}
                 className="lg:col-span-7 relative group cursor-pointer overflow-hidden rounded-3xl block"
               >
-                <img
-                  className="w-full h-[500px] object-cover transition-transform duration-1000 group-hover:scale-110"
-                  src={featured.image}
-                  alt={featured.title}
-                />
+                <div className="relative h-[500px]">
+                  <Image
+                    className="object-cover transition-transform duration-1000 group-hover:scale-110"
+                    src={featured.image}
+                    alt={featured.title}
+                    fill
+                    sizes="(max-width: 1024px) 100vw, 58vw"
+                  />
+                </div>
                 <div className="absolute top-6 left-6">
             <span className="bg-orange text-white text-[10px] uppercase tracking-widest px-4 py-2 rounded-full font-bold">
                     Destaque do mês
@@ -142,10 +150,12 @@ export default async function HomePage() {
               href="/imoveis"
               className="relative aspect-square rounded-3xl overflow-hidden group cursor-pointer"
             >
-              <img
-                className="absolute inset-0 w-full h-full object-cover object-center transition-transform duration-700 group-hover:scale-105"
+              <Image
+                className="object-cover object-center transition-transform duration-700 group-hover:scale-105"
                 src={category.image}
                 alt={category.name}
+                fill
+                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-ink/70 to-transparent" />
               <span className="absolute bottom-6 left-6 text-2xl font-medium text-white">
@@ -167,10 +177,12 @@ export default async function HomePage() {
               >
                 <p className="text-muted-foreground mb-6 leading-relaxed">&ldquo;{item.quote}&rdquo;</p>
                 <div className="flex items-center gap-4">
-                  <img
-                    className="w-12 h-12 rounded-full object-cover"
+                  <Image
+                    className="rounded-full object-cover"
                     src={item.avatar}
                     alt={item.name}
+                    width={48}
+                    height={48}
                   />
                   <div>
                     <p className="font-medium text-ink">{item.name}</p>

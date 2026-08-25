@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 
 export function Footer() {
@@ -6,9 +7,11 @@ export function Footer() {
       <div className="max-w-7xl mx-auto px-6">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-16 mb-24">
           <div className="space-y-8">
-            <img
+            <Image
               src="/Logovalorawhite.png"
               alt="Valora Imóveis"
+              width={180}
+              height={40}
               className="h-10 w-auto object-contain"
             />
             <p className="text-muted-foreground text-sm leading-relaxed">

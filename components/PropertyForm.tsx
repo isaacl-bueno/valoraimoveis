@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useRef, useState, useTransition } from "react";
@@ -549,11 +550,17 @@ export function PropertyForm({ initialProperty = null }: PropertyFormProps) {
                 {form.images.map((src, index) => (
                   <div
                     key={`${src}-${index}`}
-                    className={`relative rounded-2xl overflow-hidden border-2 ${
+                    className={`relative h-40 rounded-2xl overflow-hidden border-2 ${
                       index === form.coverIndex ? "border-brand" : "border-line"
                     }`}
                   >
-                    <img className="h-40 w-full object-cover" src={src} alt="" />
+                    <Image
+                      className="object-cover"
+                      src={src}
+                      alt=""
+                      fill
+                      sizes="(max-width: 768px) 100vw, 33vw"
+                    />
                     {index === form.coverIndex && (
                       <span className="absolute left-3 top-3 bg-brand text-white text-[10px] px-3 py-1 rounded-full font-bold">
                         CAPA

@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { Heart } from "lucide-react";
 import { useFavorites } from "@/components/FavoritesProvider";
@@ -21,10 +22,12 @@ export function PropertyCard({ property, highlight }: PropertyCardProps) {
       className="group block cursor-pointer bg-white rounded-3xl border border-line p-3 transition-all hover:shadow-2xl hover:-translate-y-2"
     >
       <div className="relative overflow-hidden rounded-2xl aspect-[4/3] mb-6">
-        <img
-          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+        <Image
+          className="object-cover transition-transform duration-700 group-hover:scale-110"
           src={property.image}
           alt={property.title}
+          fill
+          sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
         />
         <button
           type="button"

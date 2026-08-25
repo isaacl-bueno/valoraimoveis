@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import { SiteShell } from "@/components/SiteShell";
 
 export const metadata: Metadata = {
@@ -33,10 +34,13 @@ export default function SobrePage() {
     <SiteShell>
       <header className="relative h-[500px] flex items-center justify-center overflow-hidden">
         <div className="absolute inset-0 z-0">
-          <img
-            className="w-full h-full object-cover"
+          <Image
+            className="object-cover"
             src="https://storage.googleapis.com/uxpilot-auth.appspot.com/gen_d8d2c050c7_f70fd936a6c8d943.png"
             alt="Detalhe arquitetônico contemporâneo"
+            fill
+            priority
+            sizes="100vw"
           />
           <div className="absolute inset-0 bg-ink/40" />
         </div>

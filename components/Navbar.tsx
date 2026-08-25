@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -39,10 +40,13 @@ export function Navbar() {
     <nav className="fixed top-6 left-1/2 -translate-x-1/2 w-[95%] max-w-7xl z-50 bg-surface/80 backdrop-blur-md border border-line rounded-full px-6 py-3 flex items-center justify-between shadow-sm">
       <div className="flex items-center gap-8">
         <Link href="/" className="flex items-center shrink-0">
-          <img
+          <Image
             src="/Logovalora.png"
             alt="Valora Imóveis"
+            width={160}
+            height={36}
             className="h-9 w-auto object-contain"
+            priority
           />
         </Link>
         <div className="hidden md:flex items-center gap-6 text-sm font-medium text-ink">
@@ -127,9 +131,11 @@ export function Navbar() {
                           className="flex gap-3 flex-1 min-w-0"
                           onClick={() => setOpen(false)}
                         >
-                          <img
+                          <Image
                             src={item.image}
                             alt=""
+                            width={64}
+                            height={56}
                             className="w-16 h-14 rounded-xl object-cover bg-surface shrink-0"
                           />
                           <div className="min-w-0">

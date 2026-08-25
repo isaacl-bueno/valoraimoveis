@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
@@ -126,7 +127,13 @@ export function AdminPropertiesTable({ items }: AdminPropertiesTableProps) {
             className="grid grid-cols-1 md:grid-cols-[90px_1fr_120px_180px_130px_110px_130px] gap-4 md:gap-0 items-center px-6 py-5 border-t border-line"
           >
             {item.image ? (
-              <img className="w-20 h-16 rounded-xl object-cover bg-surface" src={item.image} alt="" />
+              <Image
+                className="w-20 h-16 rounded-xl object-cover bg-surface"
+                src={item.image}
+                alt=""
+                width={80}
+                height={64}
+              />
             ) : (
               <div className="w-20 h-16 rounded-xl bg-surface border border-line flex items-center justify-center text-muted">
                 <ImageIcon className="h-4 w-4" />

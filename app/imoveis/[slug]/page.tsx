@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { FavoriteToggleButton } from "@/components/FavoriteToggleButton";
@@ -29,7 +30,7 @@ export default async function PropertyDetailsPage({ params }: PageProps) {
     ? property.images
     : property.image
       ? [property.image]
-      : ["data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='800' height='600'%3E%3Crect fill='%23e8e6e1' width='800' height='600'/%3E%3C/svg%3E"];
+      : [];
   const whatsapp = `https://wa.me/5500000000000?text=${encodeURIComponent(
     `Olá, tenho interesse no imóvel ${property.title} (Ref: ${property.ref}) e gostaria de mais informações.`,
   )}`;
@@ -70,35 +71,48 @@ export default async function PropertyDetailsPage({ params }: PageProps) {
         </div>
 
         <section className="max-w-[1440px] mx-auto px-4 md:px-6 mb-12">
-          <div className="grid grid-cols-1 md:grid-cols-4 grid-rows-2 gap-3 h-[400px] md:h-[600px] relative rounded-3xl overflow-hidden">
-            <div className="md:col-span-2 md:row-span-2 relative group cursor-pointer overflow-hidden">
-              <img
-                className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
-                src={gallery[0]}
-                alt={property.title}
-              />
-            </div>
+          <div className="grid grid-cols-1 md:grid-cols-4 grid-rows-2 gap-3 h-[400px] md:h-[600px] relative rounded-3xl overflow-hidden bg-surface">
+            {gallery[0] ? (
+              <div className="md:col-span-2 md:row-span-2 relative group cursor-pointer overflow-hidden">
+                <Image
+                  className="object-cover transition-transform duration-1000 group-hover:scale-105"
+                  src={gallery[0]}
+                  alt={property.title}
+                  fill
+                  priority
+                  sizes="(max-width: 768px) 100vw, 50vw"
+                />
+              </div>
+            ) : (
+              <div className="md:col-span-2 md:row-span-2 bg-surface" />
+            )}
             {gallery.slice(1, 4).map((src) => (
               <div key={src} className="hidden md:block relative group cursor-pointer overflow-hidden">
-                <img
-                  className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
+                <Image
+                  className="object-cover transition-transform duration-1000 group-hover:scale-105"
                   src={src}
                   alt=""
+                  fill
+                  sizes="25vw"
                 />
               </div>
             ))}
-            <div className="hidden md:block relative group cursor-pointer overflow-hidden">
-              <img
-                className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
-                src={gallery[4] ?? gallery[0]}
-                alt=""
-              />
-              <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                <span className="bg-white text-ink px-6 py-3 rounded-full text-sm font-bold shadow-xl hover:bg-brand hover:text-white transition-all">
-                  <i className="fa-solid fa-images mr-2" /> Ver todas as fotos
-                </span>
+            {(gallery[4] ?? gallery[0]) && (
+              <div className="hidden md:block relative group cursor-pointer overflow-hidden">
+                <Image
+                  className="object-cover transition-transform duration-1000 group-hover:scale-105"
+                  src={gallery[4] ?? gallery[0]}
+                  alt=""
+                  fill
+                  sizes="25vw"
+                />
+                <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                  <span className="bg-white text-ink px-6 py-3 rounded-full text-sm font-bold shadow-xl hover:bg-brand hover:text-white transition-all">
+                    <i className="fa-solid fa-images mr-2" /> Ver todas as fotos
+                  </span>
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </section>
 
@@ -172,10 +186,12 @@ export default async function PropertyDetailsPage({ params }: PageProps) {
                 </a>
               </div>
               <div className="h-[400px] bg-surface rounded-3xl overflow-hidden border border-line relative">
-                <img
-                  className="w-full h-full object-cover opacity-50 grayscale"
+                <Image
+                  className="object-cover opacity-50 grayscale"
                   src="https://storage.googleapis.com/uxpilot-auth.appspot.com/gen_b0eb2e718a_9c0019a1768b0bc7.png"
                   alt="Mapa da região"
+                  fill
+                  sizes="(max-width: 1024px) 100vw, 66vw"
                 />
                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center">
                   <div className="w-12 h-12 bg-brand text-white rounded-full flex items-center justify-center shadow-2xl animate-bounce">
@@ -219,10 +235,12 @@ export default async function PropertyDetailsPage({ params }: PageProps) {
               </div>
               <div className="pt-8 border-t border-line">
                 <div className="flex items-center gap-4">
-                  <img
+                  <Image
                     src={property.broker.avatar}
                     alt={property.broker.name}
-                    className="w-14 h-14 rounded-full object-cover"
+                    className="rounded-full object-cover"
+                    width={56}
+                    height={56}
                   />
                   <div>
                     <p className="text-xs uppercase tracking-widest text-muted font-bold">
@@ -263,10 +281,12 @@ export default async function PropertyDetailsPage({ params }: PageProps) {
               >
                 <div className="flex flex-col md:flex-row gap-6">
                   <div className="md:w-1/2 relative overflow-hidden rounded-2xl aspect-[4/3]">
-                    <img
-                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                    <Image
+                      className="object-cover transition-transform duration-700 group-hover:scale-110"
                       src={item.image}
                       alt={item.title}
+                      fill
+                      sizes="(max-width: 768px) 100vw, 25vw"
                     />
                     <div className="absolute bottom-4 left-4">
                       <span className="bg-ink/80 backdrop-blur-md text-white text-[10px] uppercase tracking-widest px-3 py-1 rounded-lg">

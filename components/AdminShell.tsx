@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { ArrowUpRight, LogOut } from "lucide-react";
@@ -32,9 +33,11 @@ export function AdminShell({
       <aside className="hidden lg:flex w-72 bg-white border-r border-line flex-col fixed inset-y-0 left-0">
         <div className="h-24 px-8 flex items-center border-b border-line">
           <Link href="/" className="flex items-center">
-            <img
+            <Image
               src="/Logovalora.png"
               alt="Valora Imóveis"
+              width={160}
+              height={36}
               className="h-9 w-auto object-contain"
             />
           </Link>
