@@ -5,7 +5,10 @@ import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
 
-const UPLOAD_DIR = path.join(process.cwd(), "public", "uploads");
+const isServerless = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
+const UPLOAD_DIR = isServerless
+  ? path.join("/tmp", "valoraimoveis", "uploads")
+  : path.join(process.cwd(), "public", "uploads");
 const MAX_SIZE = 8 * 1024 * 1024;
 const ALLOWED = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
 
@@ -39,7 +42,8 @@ export async function POST(request: Request) {
       const filename = `${Date.now()}-${randomUUID().slice(0, 8)}.${extension}`;
       const buffer = Buffer.from(await file.arrayBuffer());
       await fs.writeFile(path.join(UPLOAD_DIR, filename), buffer);
-      urls.push(`/uploads/${filename}`);
+      // No Vercel arquivos em /tmp precisam ser servidos via API; local usa /public/uploads.
+      urls.push(isServerless ? `/api/media/${filename}` : `/uploads/${filename}`);
     }
 
     return NextResponse.json({ urls });

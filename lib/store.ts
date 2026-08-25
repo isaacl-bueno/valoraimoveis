@@ -5,26 +5,26 @@ import { buildLocationShort, formatPrice, slugify } from "@/lib/format";
 import { seedProperties } from "@/lib/seed";
 import type { AdminPropertyListItem, Property, PropertyInput, PropertyStatus } from "@/lib/types";
 
-const DATA_DIR = path.join(process.cwd(), "data");
+const isServerless = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
+
+/** Local: ./data — Vercel: /tmp (única pasta gravável no serverless). */
+const DATA_DIR = isServerless
+  ? path.join("/tmp", "valoraimoveis")
+  : path.join(process.cwd(), "data");
 const DATA_FILE = path.join(DATA_DIR, "properties.json");
 
-async function ensureStore() {
-  await fs.mkdir(DATA_DIR, { recursive: true });
+async function readAll(): Promise<Property[]> {
   try {
-    await fs.access(DATA_FILE);
+    const raw = await fs.readFile(DATA_FILE, "utf8");
+    return JSON.parse(raw) as Property[];
   } catch {
-    await fs.writeFile(DATA_FILE, JSON.stringify(seedProperties, null, 2), "utf8");
+    // Sem arquivo gravado ainda: usa o seed em memória (não tenta escrever no deploy).
+    return structuredClone(seedProperties);
   }
 }
 
-async function readAll(): Promise<Property[]> {
-  await ensureStore();
-  const raw = await fs.readFile(DATA_FILE, "utf8");
-  return JSON.parse(raw) as Property[];
-}
-
 async function writeAll(properties: Property[]) {
-  await ensureStore();
+  await fs.mkdir(DATA_DIR, { recursive: true });
   await fs.writeFile(DATA_FILE, JSON.stringify(properties, null, 2), "utf8");
 }
 
