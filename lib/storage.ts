@@ -33,6 +33,14 @@ export function getBlobCommandOptions() {
   return storeId ? { storeId } : {};
 }
 
+export function getBlobWebhookPublicKey() {
+  return (
+    process.env.BLOB_WEBHOOK_PUBLIC_KEY?.trim() ||
+    process.env.BLOB_READ_WRITE_TOKEN_WEBHOOK_PUBLIC_KEY?.trim() ||
+    undefined
+  );
+}
+
 /** Vercel/serverless sem Blob usa /tmp (não persistente); Hostinger VPS e local têm disco. */
 export function usesPersistentStorage() {
   if (usesBlobStorage()) return false;

@@ -55,6 +55,7 @@ export const config = {
     "/api/properties",
     "/api/properties/:path*",
     "/api/upload",
+    "/api/upload/client",
     "/api/users",
     "/api/users/:path*",
   ],
