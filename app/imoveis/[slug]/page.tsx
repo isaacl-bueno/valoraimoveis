@@ -3,10 +3,12 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { FavoriteToggleButton } from "@/components/FavoriteToggleButton";
+import { LocationMap } from "@/components/LocationMapClient";
 import { PropertyGallery } from "@/components/PropertyGallery";
 import { SiteShell } from "@/components/SiteShell";
 import { contact, whatsappLink } from "@/lib/contact";
 import { formatArea } from "@/lib/format";
+import { buildLocationQuery, getLocationMapsUrl } from "@/lib/maps";
 import { getPropertyBySlug, listProperties } from "@/lib/store";
 
 export const dynamic = "force-dynamic";
@@ -36,6 +38,20 @@ export default async function PropertyDetailsPage({ params }: PageProps) {
   const whatsapp = whatsappLink(
     `Olá, tenho interesse no imóvel ${property.title} (Ref: ${property.ref}) e gostaria de mais informações.`,
   );
+  const locationQuery = buildLocationQuery({
+    address: property.address,
+    number: property.number,
+    neighborhood: property.neighborhood,
+    city: property.city,
+    state: property.state,
+    cep: property.cep,
+    locationFull: property.locationFull,
+  });
+  const mapsUrl = getLocationMapsUrl({
+    latitude: property.latitude,
+    longitude: property.longitude,
+    query: locationQuery,
+  });
 
   return (
     <SiteShell>
@@ -137,7 +153,7 @@ export default async function PropertyDetailsPage({ params }: PageProps) {
               <div className="flex items-end justify-between">
                 <h2 className="h-display text-3xl text-ink">Localização</h2>
                 <a
-                  href="https://maps.google.com"
+                  href={mapsUrl}
                   target="_blank"
                   rel="noreferrer"
                   className="text-xs font-bold text-brand hover:underline flex items-center gap-2"
@@ -145,23 +161,14 @@ export default async function PropertyDetailsPage({ params }: PageProps) {
                   Ver no Google Maps <i className="fa-solid fa-arrow-up-right-from-square" />
                 </a>
               </div>
-              <div className="h-[400px] bg-surface rounded-3xl overflow-hidden border border-line relative">
-                <Image
-                  className="object-cover opacity-50 grayscale"
-                  src="https://storage.googleapis.com/uxpilot-auth.appspot.com/gen_b0eb2e718a_9c0019a1768b0bc7.png"
-                  alt="Mapa da região"
-                  fill
-                  sizes="(max-width: 1024px) 100vw, 66vw"
-                />
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center">
-                  <div className="w-12 h-12 bg-brand text-white rounded-full flex items-center justify-center shadow-2xl animate-bounce">
-                    <i className="fa-solid fa-location-dot text-xl" />
-                  </div>
-                  <div className="mt-2 bg-white px-4 py-2 rounded-lg shadow-lg border border-line text-xs font-bold text-ink">
-                    {property.location}
-                  </div>
-                </div>
-              </div>
+              <LocationMap
+                className="h-[400px]"
+                label={property.location}
+                query={locationQuery}
+                latitude={property.latitude}
+                longitude={property.longitude}
+                mapsUrl={mapsUrl}
+              />
             </div>
           </div>
 

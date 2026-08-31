@@ -118,3 +118,64 @@
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+.location-map .leaflet-container {
+  height: 100%;
+  width: 100%;
+  cursor: pointer;
+  background: #f5f3ef;
+}
+
+.location-map .leaflet-control-attribution {
+  font-size: 10px;
+  background: rgba(255, 255, 255, 0.85) !important;
+}
+
+.location-map-marker {
+  background: transparent;
+  border: none;
+}
+
+.location-map-marker-pin {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.location-map-marker-dot {
+  display: flex;
+  width: 3rem;
+  height: 3rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  background: var(--brand);
+  color: white;
+  box-shadow: 0 12px 30px rgba(0, 32, 72, 0.35);
+  animation: location-map-bounce 2s ease-in-out infinite;
+}
+
+.location-map-marker-dot i {
+  font-size: 1.1rem;
+}
+
+.location-map-marker-shadow {
+  display: block;
+  width: 0.75rem;
+  height: 0.25rem;
+  margin-top: 0.15rem;
+  border-radius: 9999px;
+  background: rgba(0, 0, 0, 0.18);
+}
+
+@keyframes location-map-bounce {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-6px);
+  }
+}

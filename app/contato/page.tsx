@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import { LocationMap } from "@/components/LocationMapClient";
 import { SiteShell } from "@/components/SiteShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -145,25 +146,12 @@ export default function ContatoPage() {
                   </a>
                 </div>
               </div>
-              <div className="h-80 rounded-3xl overflow-hidden border border-line bg-[#e7e3dd] relative">
-                <div
-                  className="absolute inset-0 opacity-60"
-                  style={{
-                    backgroundImage:
-                      "linear-gradient(#cfc9c2 1px,transparent 1px),linear-gradient(90deg,#cfc9c2 1px,transparent 1px)",
-                    backgroundSize: "40px 40px",
-                  }}
-                />
-                <div className="absolute inset-0 flex items-center justify-center text-center">
-                  <div>
-                    <span className="w-14 h-14 mx-auto rounded-full bg-brand text-white flex items-center justify-center">
-                      <i className="fa-solid fa-location-dot" />
-                    </span>
-                    <p className="mt-3 font-bold">Valora Imóveis</p>
-                    <p className="text-xs text-muted-foreground">{contact.cityState}</p>
-                  </div>
-                </div>
-              </div>
+              <LocationMap
+                className="h-80"
+                label="Valora Imóveis"
+                query={contact.addressFull}
+                mapsUrl={contact.mapsUrl}
+              />
             </aside>
           </div>
         </section>

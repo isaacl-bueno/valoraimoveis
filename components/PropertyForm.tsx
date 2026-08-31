@@ -388,7 +388,7 @@ export function PropertyForm({ initialProperty = null }: PropertyFormProps) {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {["Casa", "Sobrado", "Apartamento", "Cobertura", "Terreno"].map((item) => (
+                      {["Casa", "Sobrado", "Apartamento", "Studio", "Cobertura", "Terreno"].map((item) => (
                         <SelectItem key={item} value={item}>
                           {item}
                         </SelectItem>
