@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useRef, useState, useTransition } from "react";
 import { ArrowLeft, CloudUpload } from "lucide-react";
 import { ConfirmDeleteDialog } from "@/components/ConfirmDeleteDialog";
+import { PropertyAddressFields } from "@/components/PropertyAddressFields";
 import { useLoading } from "@/components/LoadingProvider";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -456,25 +457,20 @@ export function PropertyForm({ initialProperty = null }: PropertyFormProps) {
               <CardTitle className="h-display text-2xl font-normal">Localização</CardTitle>
             </CardHeader>
             <CardContent className="p-7">
-              <div className="grid md:grid-cols-3 gap-5">
-                {(
-                  [
-                    ["cep", "CEP", 1],
-                    ["address", "Endereço", 2],
-                    ["number", "Número", 1],
-                    ["neighborhood", "Bairro", 1],
-                    ["city", "Cidade", 1],
-                    ["state", "Estado", 1],
-                    ["latitude", "Latitude", 1],
-                    ["longitude", "Longitude", 1],
-                  ] as const
-                ).map(([key, label, span]) => (
-                  <div key={key} className={span === 2 ? "md:col-span-2" : undefined}>
-                    <Label>{label}</Label>
-                    <Input value={form[key]} onChange={(e) => update(key, e.target.value)} />
-                  </div>
-                ))}
-              </div>
+              <PropertyAddressFields
+                values={{
+                  cep: form.cep,
+                  address: form.address,
+                  number: form.number,
+                  neighborhood: form.neighborhood,
+                  city: form.city,
+                  state: form.state,
+                  latitude: form.latitude,
+                  longitude: form.longitude,
+                }}
+                onChange={(patch) => setForm((current) => ({ ...current, ...patch }))}
+                onCepMessage={setMessage}
+              />
             </CardContent>
           </Card>
 
