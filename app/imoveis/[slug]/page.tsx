@@ -3,6 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { FavoriteToggleButton } from "@/components/FavoriteToggleButton";
+import { PropertyGallery } from "@/components/PropertyGallery";
 import { SiteShell } from "@/components/SiteShell";
 import { contact, whatsappLink } from "@/lib/contact";
 import { formatArea } from "@/lib/format";
@@ -71,51 +72,7 @@ export default async function PropertyDetailsPage({ params }: PageProps) {
           </div>
         </div>
 
-        <section className="max-w-[1440px] mx-auto px-4 md:px-6 mb-12">
-          <div className="grid grid-cols-1 md:grid-cols-4 grid-rows-2 gap-3 h-[400px] md:h-[600px] relative rounded-3xl overflow-hidden bg-surface">
-            {gallery[0] ? (
-              <div className="md:col-span-2 md:row-span-2 relative group cursor-pointer overflow-hidden">
-                <Image
-                  className="object-cover transition-transform duration-1000 group-hover:scale-105"
-                  src={gallery[0]}
-                  alt={property.title}
-                  fill
-                  priority
-                  sizes="(max-width: 768px) 100vw, 50vw"
-                />
-              </div>
-            ) : (
-              <div className="md:col-span-2 md:row-span-2 bg-surface" />
-            )}
-            {gallery.slice(1, 4).map((src) => (
-              <div key={src} className="hidden md:block relative group cursor-pointer overflow-hidden">
-                <Image
-                  className="object-cover transition-transform duration-1000 group-hover:scale-105"
-                  src={src}
-                  alt=""
-                  fill
-                  sizes="25vw"
-                />
-              </div>
-            ))}
-            {(gallery[4] ?? gallery[0]) && (
-              <div className="hidden md:block relative group cursor-pointer overflow-hidden">
-                <Image
-                  className="object-cover transition-transform duration-1000 group-hover:scale-105"
-                  src={gallery[4] ?? gallery[0]}
-                  alt=""
-                  fill
-                  sizes="25vw"
-                />
-                <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                  <span className="bg-white text-ink px-6 py-3 rounded-full text-sm font-bold shadow-xl hover:bg-brand hover:text-white transition-all">
-                    <i className="fa-solid fa-images mr-2" /> Ver todas as fotos
-                  </span>
-                </div>
-              </div>
-            )}
-          </div>
-        </section>
+        <PropertyGallery images={gallery} title={property.title} />
 
         <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-12 gap-16">
           <div className="lg:col-span-8 space-y-12">
@@ -158,14 +115,16 @@ export default async function PropertyDetailsPage({ params }: PageProps) {
               ))}
             </div>
 
-            <div className="space-y-6">
-              <h2 className="h-display text-3xl text-ink">Sobre o imóvel</h2>
-              <div className="max-w-none text-muted leading-relaxed space-y-4">
-                {property.description.map((paragraph) => (
-                  <p key={paragraph}>{paragraph}</p>
-                ))}
+            {property.description.length > 0 && (
+              <div className="space-y-6">
+                <h2 className="h-display text-3xl text-ink">Sobre o imóvel</h2>
+                <div className="max-w-none text-muted leading-relaxed space-y-4">
+                  {property.description.map((paragraph) => (
+                    <p key={paragraph}>{paragraph}</p>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
               <FeatureBlock icon="fa-door-open" title="Cômodos" items={property.rooms} />
@@ -234,25 +193,7 @@ export default async function PropertyDetailsPage({ params }: PageProps) {
                   Agendar Visita
                 </button>
               </div>
-              <div className="pt-8 border-t border-line">
-                <div className="flex items-center gap-4">
-                  <Image
-                    src={property.broker.avatar}
-                    alt={property.broker.name}
-                    className="rounded-full object-cover"
-                    width={56}
-                    height={56}
-                  />
-                  <div>
-                    <p className="text-xs uppercase tracking-widest text-muted font-bold">
-                      Corretor Responsável
-                    </p>
-                    <p className="text-base font-bold text-ink">{property.broker.name}</p>
-                    <p className="text-xs text-muted">{property.broker.creci}</p>
-                  </div>
-                </div>
-              </div>
-              <div className="space-y-4 pt-4">
+              <div className="space-y-4 pt-8 border-t border-line">
                 <p className="text-xs font-medium text-muted">Prefere nos ligar?</p>
                 <p className="text-lg font-bold text-ink flex items-center gap-2">
                   <i className="fa-solid fa-phone text-brand text-sm" />
@@ -344,6 +285,8 @@ function FeatureBlock({
   title: string;
   items: string[];
 }) {
+  if (!items.length) return null;
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">

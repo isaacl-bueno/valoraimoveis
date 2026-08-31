@@ -4,6 +4,7 @@ import { HeroSearch } from "@/components/HeroSearch";
 import { PropertyCard } from "@/components/PropertyCard";
 import { SiteShell } from "@/components/SiteShell";
 import { categories, testimonials } from "@/lib/data";
+import { formatArea } from "@/lib/format";
 import { buildHeroFilterOptions, categoryHref } from "@/lib/property-filters";
 import { listProperties } from "@/lib/store";
 
@@ -61,12 +62,12 @@ export default async function HomePage() {
 
         {featured ? (
           <>
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 mb-24 items-center">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 mb-24 items-start">
               <Link
                 href={`/imoveis/${featured.slug}`}
                 className="lg:col-span-7 relative group cursor-pointer overflow-hidden rounded-3xl block"
               >
-                <div className="relative h-[500px]">
+                <div className="relative h-[420px] lg:h-[500px]">
                   <Image
                     className="object-cover transition-transform duration-1000 group-hover:scale-110"
                     src={featured.image}
@@ -76,29 +77,40 @@ export default async function HomePage() {
                   />
                 </div>
                 <div className="absolute top-6 left-6">
-            <span className="bg-orange text-white text-[10px] uppercase tracking-widest px-4 py-2 rounded-full font-bold">
+                  <span className="bg-orange text-white text-[10px] uppercase tracking-widest px-4 py-2 rounded-full font-bold">
                     Destaque do mês
                   </span>
                 </div>
               </Link>
-              <div className="lg:col-span-5 space-y-8">
+              <div className="lg:col-span-5 flex min-w-0 flex-col gap-8">
                 <div className="space-y-4">
                   <p className="text-muted-foreground text-sm flex items-center gap-2">
-                    <i className="fa-solid fa-location-dot text-brand" />
-                    {featured.location}
+                    <i className="fa-solid fa-location-dot text-brand shrink-0" />
+                    <span className="line-clamp-2">{featured.location}</span>
                   </p>
-                  <h3 className="h-display text-4xl text-ink">{featured.title}</h3>
-                  <p className="text-muted-foreground leading-relaxed">
-                    {featured.description[0] ||
-                      "Uma obra-prima da arquitetura contemporânea com integração total à natureza."}
-                  </p>
+                  <h3 className="h-display text-2xl md:text-3xl lg:text-4xl text-ink leading-tight line-clamp-3">
+                    {featured.title}
+                  </h3>
+                  {featured.description.length > 0 ? (
+                    <div className="space-y-3">
+                      <p className="text-muted-foreground text-sm md:text-base leading-relaxed line-clamp-4 overflow-hidden">
+                        {featured.description.join(" ")}
+                      </p>
+                      <Link
+                        href={`/imoveis/${featured.slug}`}
+                        className="inline-flex text-sm font-bold text-brand hover:underline"
+                      >
+                        Ver descrição completa
+                      </Link>
+                    </div>
+                  ) : null}
                 </div>
 
-                <div className="grid grid-cols-3 gap-6 py-8 border-y border-line">
+                <div className="grid grid-cols-3 gap-4 sm:gap-6 py-8 border-y border-line">
                   <div className="text-center">
                     <i className="fa-solid fa-bed text-muted-foreground mb-2" />
-                    <p className="text-lg font-bold text-ink">{featured.suites}</p>
-                    <p className="text-[10px] uppercase text-muted-foreground tracking-widest">Suítes</p>
+                    <p className="text-lg font-bold text-ink">{featured.bedrooms}</p>
+                    <p className="text-[10px] uppercase text-muted-foreground tracking-widest">Quartos</p>
                   </div>
                   <div className="text-center">
                     <i className="fa-solid fa-car text-muted-foreground mb-2" />
@@ -108,25 +120,27 @@ export default async function HomePage() {
                   <div className="text-center">
                     <i className="fa-solid fa-maximize text-muted-foreground mb-2" />
                     <p className="text-lg font-bold text-ink">
-                      {featured.area.toLocaleString("pt-BR")}m²
+                      {formatArea(featured.builtArea || featured.area)}
                     </p>
                     <p className="text-[10px] uppercase text-muted-foreground tracking-widest">Área</p>
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                   <div>
                     <p className="text-xs text-muted-foreground mb-1">Valor de Venda</p>
-                    <p className="text-3xl font-light text-ink">{featured.priceLabel}</p>
+                    <p className="text-2xl md:text-3xl font-light text-ink">{featured.priceLabel}</p>
                   </div>
                   <Link
                     href={`/imoveis/${featured.slug}`}
-                    className="bg-ink text-white px-8 py-4 rounded-full text-sm font-bold hover:bg-brand transition-colors"
+                    className="bg-ink text-white px-8 py-4 rounded-full text-sm font-bold hover:bg-brand transition-colors text-center shrink-0"
                   >
                     Ver Imóvel
                   </Link>
                 </div>
-                <p className="text-[10px] text-muted-foreground uppercase tracking-widest">Ref: {featured.ref}</p>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-widest">
+                  Ref: {featured.ref}
+                </p>
               </div>
             </div>
 
