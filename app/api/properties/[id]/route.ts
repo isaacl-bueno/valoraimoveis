@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidatePropertyPages } from "@/lib/revalidate";
 import { deleteProperty, getPropertyById, updateProperty } from "@/lib/store";
 import type { PropertyInput } from "@/lib/types";
 
@@ -25,6 +26,7 @@ export async function PUT(request: Request, context: RouteContext) {
     if (!property) {
       return NextResponse.json({ error: "Imóvel não encontrado." }, { status: 404 });
     }
+    revalidatePropertyPages(property.slug);
     return NextResponse.json(property);
   } catch (error) {
     console.error(error);
@@ -34,9 +36,11 @@ export async function PUT(request: Request, context: RouteContext) {
 
 export async function DELETE(_request: Request, context: RouteContext) {
   const { id } = await context.params;
+  const existing = await getPropertyById(id);
   const removed = await deleteProperty(id);
   if (!removed) {
     return NextResponse.json({ error: "Imóvel não encontrado." }, { status: 404 });
   }
+  revalidatePropertyPages(existing?.slug);
   return NextResponse.json({ ok: true });
 }

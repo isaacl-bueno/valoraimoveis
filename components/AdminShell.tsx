@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { ArrowUpRight, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { TEAM_IMOVIES, TEAM_LOGIN, TEAM_USUARIOS } from "@/lib/routes";
@@ -21,6 +22,18 @@ export function AdminShell({
 }) {
   const pathname = usePathname();
   const router = useRouter();
+  const [userName, setUserName] = useState("Administrador");
+  const [userEmail, setUserEmail] = useState("admin@valoraimoveis.com");
+
+  useEffect(() => {
+    void fetch("/api/auth/me")
+      .then((response) => (response.ok ? response.json() : null))
+      .then((data) => {
+        if (data?.user?.name) setUserName(data.user.name);
+        if (data?.user?.email) setUserEmail(data.user.email);
+      })
+      .catch(() => undefined);
+  }, []);
 
   async function handleLogout() {
     await fetch("/api/auth/logout", { method: "POST" });
@@ -82,7 +95,7 @@ export function AdminShell({
           </Button>
         </div>
       </aside>
-      <main className="flex-1 lg:ml-72">
+      <main className="flex-1 lg:ml-72 bg-background min-h-screen">
         <header className="h-24 bg-page/90 backdrop-blur border-b border-line sticky top-0 z-30">
           <div className="h-full px-6 md:px-10 flex items-center justify-between">
             <div>
@@ -93,11 +106,11 @@ export function AdminShell({
             </div>
             <div className="flex items-center gap-3">
               <div className="hidden sm:block text-right">
-                <p className="text-sm font-bold">Administrador</p>
-                <p className="text-xs text-muted">admin@valoraimoveis.com</p>
+                <p className="text-sm font-bold">{userName}</p>
+                <p className="text-xs text-muted">{userEmail}</p>
               </div>
               <span className="w-10 h-10 rounded-full bg-brand text-white flex items-center justify-center font-bold">
-                V
+                {userName.charAt(0).toUpperCase()}
               </span>
             </div>
           </div>

@@ -2,10 +2,11 @@ import { NextResponse } from "next/server";
 import {
   SESSION_COOKIE,
   createSessionToken,
-  getAdminCredentials,
   sessionCookieOptions,
   validateCredentials,
 } from "@/lib/auth";
+
+export const runtime = "nodejs";
 
 export async function POST(request: Request) {
   try {
@@ -17,15 +18,15 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Informe e-mail e senha." }, { status: 400 });
     }
 
-    if (!validateCredentials(email, password)) {
+    const user = await validateCredentials(email, password);
+    if (!user) {
       return NextResponse.json({ error: "E-mail ou senha inválidos." }, { status: 401 });
     }
 
-    const admin = getAdminCredentials();
-    const token = await createSessionToken({ email: admin.email, name: admin.name });
+    const token = await createSessionToken({ email: user.email, name: user.name });
     const response = NextResponse.json({
       ok: true,
-      user: { email: admin.email, name: admin.name },
+      user: { email: user.email, name: user.name },
     });
     response.cookies.set(SESSION_COOKIE, token, sessionCookieOptions());
     return response;

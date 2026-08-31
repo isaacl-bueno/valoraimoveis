@@ -7,6 +7,7 @@ function isProtectedApi(pathname: string, method: string) {
   if (pathname.startsWith("/api/upload") && method !== "GET") return true;
   if (pathname === "/api/properties" && method !== "GET") return true;
   if (pathname.startsWith("/api/properties/") && method !== "GET") return true;
+  if (pathname.startsWith("/api/users")) return true;
   return false;
 }
 
@@ -54,5 +55,7 @@ export const config = {
     "/api/properties",
     "/api/properties/:path*",
     "/api/upload",
+    "/api/users",
+    "/api/users/:path*",
   ],
 };

@@ -4,7 +4,7 @@ import { HeroSearch } from "@/components/HeroSearch";
 import { PropertyCard } from "@/components/PropertyCard";
 import { SiteShell } from "@/components/SiteShell";
 import { categories, testimonials } from "@/lib/data";
-import { buildHeroFilterOptions } from "@/lib/property-filters";
+import { buildHeroFilterOptions, categoryHref } from "@/lib/property-filters";
 import { listProperties } from "@/lib/store";
 
 export const dynamic = "force-dynamic";
@@ -147,7 +147,7 @@ export default async function HomePage() {
           {categories.map((category) => (
             <Link
               key={category.name}
-              href="/imoveis"
+              href={categoryHref(category.name)}
               className="relative aspect-square rounded-3xl overflow-hidden group cursor-pointer"
             >
               <Image

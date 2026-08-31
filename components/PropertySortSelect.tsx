@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   Select,
   SelectContent,
@@ -8,23 +8,30 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-
-const OPTIONS = [
-  { value: "recentes", label: "Mais recentes" },
-  { value: "menor-preco", label: "Menor preço" },
-  { value: "maior-preco", label: "Maior preço" },
-];
+import { SORT_OPTIONS, buildImoveisHref, normalizeSortOption } from "@/lib/property-filters";
 
 export function PropertySortSelect() {
-  const [value, setValue] = useState("recentes");
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const value = normalizeSortOption(searchParams.get("ordenar") ?? undefined);
+
+  function handleChange(next: string) {
+    const params = Object.fromEntries(searchParams.entries()) as Record<string, string>;
+    router.push(
+      buildImoveisHref({
+        ...params,
+        ordenar: next === "recentes" ? undefined : next,
+      }),
+    );
+  }
 
   return (
-    <Select value={value} onValueChange={setValue}>
+    <Select value={value} onValueChange={handleChange}>
       <SelectTrigger className="h-9 w-[160px] border-none bg-transparent shadow-none px-2 font-medium focus:ring-0">
         <SelectValue />
       </SelectTrigger>
       <SelectContent>
-        {OPTIONS.map((item) => (
+        {SORT_OPTIONS.map((item) => (
           <SelectItem key={item.value} value={item.value}>
             {item.label}
           </SelectItem>

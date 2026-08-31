@@ -68,3 +68,43 @@ export type AdminPropertyListItem = {
   status: PropertyStatus;
   image: string;
 };
+
+export type UserRole = "Administrador" | "Editor";
+export type UserStatus = "Ativo" | "Inativo";
+
+export type AdminUserRecord = {
+  id: string;
+  name: string;
+  email: string;
+  passwordHash: string;
+  role: UserRole;
+  status: UserStatus;
+  isDefault: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type AdminUserListItem = {
+  id: string;
+  name: string;
+  email: string;
+  role: UserRole;
+  status: UserStatus;
+  isDefault: boolean;
+  initial: string;
+};
+
+export type CreateUserInput = {
+  name: string;
+  email: string;
+  password: string;
+  role: UserRole;
+  status: UserStatus;
+};
+
+export type UpdateUserInput = {
+  name?: string;
+  email?: string;
+  role?: UserRole;
+  status?: UserStatus;
+};

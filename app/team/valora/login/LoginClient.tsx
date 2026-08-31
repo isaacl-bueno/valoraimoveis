@@ -5,7 +5,6 @@ import Link from "next/link";
 import { FormEvent, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowRight } from "lucide-react";
-import { useLoading } from "@/components/LoadingProvider";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,7 +15,6 @@ import { TEAM_BASE, TEAM_IMOVIES } from "@/lib/routes";
 export default function LoginClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { withLoading } = useLoading();
   const [email, setEmail] = useState("admin@valoraimoveis.com");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -28,22 +26,20 @@ export default function LoginClient() {
     setLoading(true);
 
     try {
-      await withLoading(async () => {
-        const response = await fetch("/api/auth/login", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, password }),
-        });
-        const data = await response.json();
-        if (!response.ok) {
-          setError(data.error || "Não foi possível entrar.");
-          return;
-        }
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        setError(data.error || "Não foi possível entrar.");
+        return;
+      }
 
-        const next = searchParams.get("next") || TEAM_IMOVIES;
-        router.replace(next.startsWith(TEAM_BASE) ? next : TEAM_IMOVIES);
-        router.refresh();
-      }, "Entrando...");
+      const next = searchParams.get("next") || TEAM_IMOVIES;
+      router.replace(next.startsWith(TEAM_BASE) ? next : TEAM_IMOVIES);
+      router.refresh();
     } catch {
       setError("Erro de conexão. Tente novamente.");
     } finally {

@@ -1,49 +1,36 @@
 import { randomUUID } from "crypto";
-import { promises as fs } from "fs";
-import path from "path";
+import { dbExecute, dbQuery, ensureDbReady } from "@/lib/db";
 import { buildLocationShort, formatPrice, slugify } from "@/lib/format";
-import { seedProperties } from "@/lib/seed";
+import * as memoryStore from "@/lib/memory-store";
+import { rowToProperty, rowsToProperties, type PropertyRow } from "@/lib/property-mapper";
+import { usingMemoryStore } from "@/lib/store-backend";
 import type { AdminPropertyListItem, Property, PropertyInput, PropertyStatus } from "@/lib/types";
 
-const isServerless = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
-
-/** Local: ./data — Vercel: /tmp (única pasta gravável no serverless). */
-const DATA_DIR = isServerless
-  ? path.join("/tmp", "valoraimoveis")
-  : path.join(process.cwd(), "data");
-const DATA_FILE = path.join(DATA_DIR, "properties.json");
-
-async function readAll(): Promise<Property[]> {
-  try {
-    const raw = await fs.readFile(DATA_FILE, "utf8");
-    return JSON.parse(raw) as Property[];
-  } catch {
-    // Sem arquivo gravado ainda: usa o seed em memória (não tenta escrever no deploy).
-    return structuredClone(seedProperties);
-  }
+async function slugExists(slug: string, excludeId?: string) {
+  const rows = excludeId
+    ? await dbQuery<{ id: string }>(
+        "SELECT id FROM properties WHERE slug = ? AND id != ? LIMIT 1",
+        [slug, excludeId],
+      )
+    : await dbQuery<{ id: string }>("SELECT id FROM properties WHERE slug = ? LIMIT 1", [slug]);
+  return rows.length > 0;
 }
 
-async function writeAll(properties: Property[]) {
-  await fs.mkdir(DATA_DIR, { recursive: true });
-  await fs.writeFile(DATA_FILE, JSON.stringify(properties, null, 2), "utf8");
-}
-
-function uniqueSlug(base: string, properties: Property[], excludeId?: string) {
+async function uniqueSlug(base: string, excludeId?: string) {
   const root = slugify(base) || "imovel";
   let candidate = root;
   let index = 2;
-  while (properties.some((item) => item.slug === candidate && item.id !== excludeId)) {
+  while (await slugExists(candidate, excludeId)) {
     candidate = `${root}-${index}`;
     index += 1;
   }
   return candidate;
 }
 
-function normalizeProperty(
+async function normalizeProperty(
   input: PropertyInput,
-  properties: Property[],
   existing?: Property,
-): Property {
+): Promise<Property> {
   const now = new Date().toISOString();
   const neighborhood = input.neighborhood?.trim() ?? existing?.neighborhood ?? "";
   const city = input.city?.trim() ?? existing?.city ?? "";
@@ -62,10 +49,15 @@ function normalizeProperty(
   const price = Number(input.price ?? existing?.price) || 0;
   const images = (input.images ?? existing?.images ?? []).filter(Boolean);
   const image = input.image || images[0] || existing?.image || "";
+  const id = existing?.id ?? input.id ?? randomUUID();
+  const slug = await uniqueSlug(
+    input.slug || input.title || existing?.slug || "imovel",
+    existing?.id,
+  );
 
   return {
-    id: existing?.id ?? input.id ?? randomUUID(),
-    slug: uniqueSlug(input.slug || input.title || existing?.slug || "imovel", properties, existing?.id),
+    id,
+    slug,
     title: input.title?.trim() || existing?.title || "Imóvel sem título",
     location,
     locationFull,
@@ -114,32 +106,164 @@ function normalizeProperty(
   };
 }
 
+function propertyParams(property: Property) {
+  return [
+    property.id,
+    property.slug,
+    property.title,
+    property.location,
+    property.locationFull,
+    property.city,
+    property.neighborhood,
+    property.state,
+    property.cep,
+    property.address,
+    property.number,
+    property.latitude,
+    property.longitude,
+    property.type,
+    property.typeLabel,
+    property.price,
+    property.priceLabel,
+    property.ref,
+    property.status,
+    property.bedrooms,
+    property.suites,
+    property.bathrooms,
+    property.parking,
+    property.area,
+    property.builtArea,
+    property.landArea,
+    property.image,
+    JSON.stringify(property.images),
+    property.featured,
+    property.highlight,
+    JSON.stringify(property.description),
+    property.condo,
+    property.iptu,
+    JSON.stringify(property.rooms),
+    JSON.stringify(property.leisure),
+    JSON.stringify(property.extras),
+    JSON.stringify(property.proximities),
+    JSON.stringify(property.broker),
+    property.createdAt,
+    property.updatedAt,
+  ];
+}
+
+async function saveProperty(property: Property) {
+  const params = propertyParams(property);
+  const placeholders = params.map(() => "?").join(", ");
+  await dbExecute(
+    `INSERT INTO properties (
+      id, slug, title, location, location_full, city, neighborhood, state,
+      cep, address, number, latitude, longitude, type, type_label,
+      price, price_label, ref, status, bedrooms, suites, bathrooms, parking,
+      area, built_area, land_area, image, images, featured, highlight,
+      description, condo, iptu, rooms, leisure, extras, proximities, broker,
+      created_at, updated_at
+    ) VALUES (${placeholders})`,
+    params,
+  );
+}
+
+async function updateStoredProperty(property: Property) {
+  await dbExecute(
+    `UPDATE properties SET
+      slug = ?, title = ?, location = ?, location_full = ?, city = ?, neighborhood = ?, state = ?,
+      cep = ?, address = ?, number = ?, latitude = ?, longitude = ?, type = ?, type_label = ?,
+      price = ?, price_label = ?, ref = ?, status = ?, bedrooms = ?, suites = ?, bathrooms = ?, parking = ?,
+      area = ?, built_area = ?, land_area = ?, image = ?, images = ?, featured = ?, highlight = ?,
+      description = ?, condo = ?, iptu = ?, rooms = ?, leisure = ?, extras = ?, proximities = ?, broker = ?,
+      updated_at = ?
+    WHERE id = ?`,
+    [
+      property.slug,
+      property.title,
+      property.location,
+      property.locationFull,
+      property.city,
+      property.neighborhood,
+      property.state,
+      property.cep,
+      property.address,
+      property.number,
+      property.latitude,
+      property.longitude,
+      property.type,
+      property.typeLabel,
+      property.price,
+      property.priceLabel,
+      property.ref,
+      property.status,
+      property.bedrooms,
+      property.suites,
+      property.bathrooms,
+      property.parking,
+      property.area,
+      property.builtArea,
+      property.landArea,
+      property.image,
+      JSON.stringify(property.images),
+      property.featured,
+      property.highlight,
+      JSON.stringify(property.description),
+      property.condo,
+      property.iptu,
+      JSON.stringify(property.rooms),
+      JSON.stringify(property.leisure),
+      JSON.stringify(property.extras),
+      JSON.stringify(property.proximities),
+      JSON.stringify(property.broker),
+      property.updatedAt,
+      property.id,
+    ],
+  );
+}
+
 export async function listProperties(options?: {
   status?: PropertyStatus | "all";
   publishedOnly?: boolean;
 }) {
-  const properties = await readAll();
+  if (await usingMemoryStore()) return memoryStore.listProperties(options);
+  await ensureDbReady();
+
+  let rows: PropertyRow[];
   if (options?.publishedOnly || options?.status === "Publicado") {
-    return properties.filter((item) => item.status === "Publicado");
+    rows = await dbQuery<PropertyRow>(
+      "SELECT * FROM properties WHERE status = 'Publicado' ORDER BY highlight DESC, updated_at DESC",
+    );
+  } else if (options?.status && options.status !== "all") {
+    rows = await dbQuery<PropertyRow>(
+      "SELECT * FROM properties WHERE status = ? ORDER BY updated_at DESC",
+      [options.status],
+    );
+  } else {
+    rows = await dbQuery<PropertyRow>("SELECT * FROM properties ORDER BY updated_at DESC");
   }
-  if (options?.status && options.status !== "all") {
-    return properties.filter((item) => item.status === options.status);
-  }
-  return properties;
+
+  return rowsToProperties(rows);
 }
 
 export async function getPropertyBySlug(slug: string) {
-  const properties = await readAll();
-  return properties.find((item) => item.slug === slug) ?? null;
+  if (await usingMemoryStore()) return memoryStore.getPropertyBySlug(slug);
+  await ensureDbReady();
+  const rows = await dbQuery<PropertyRow>("SELECT * FROM properties WHERE slug = ? LIMIT 1", [
+    slug,
+  ]);
+  return rows[0] ? rowToProperty(rows[0]) : null;
 }
 
 export async function getPropertyById(id: string) {
-  const properties = await readAll();
-  return properties.find((item) => item.id === id) ?? null;
+  if (await usingMemoryStore()) return memoryStore.getPropertyById(id);
+  await ensureDbReady();
+  const rows = await dbQuery<PropertyRow>("SELECT * FROM properties WHERE id = ? LIMIT 1", [id]);
+  return rows[0] ? rowToProperty(rows[0]) : null;
 }
 
 export async function listAdminProperties(): Promise<AdminPropertyListItem[]> {
-  const properties = await readAll();
+  if (await usingMemoryStore()) return memoryStore.listAdminProperties();
+  const properties = await listProperties();
   return properties.map((item) => ({
     id: item.id,
     slug: item.slug,
@@ -154,28 +278,27 @@ export async function listAdminProperties(): Promise<AdminPropertyListItem[]> {
 }
 
 export async function createProperty(input: PropertyInput) {
-  const properties = await readAll();
-  const created = normalizeProperty(input, properties);
-  properties.unshift(created);
-  await writeAll(properties);
+  if (await usingMemoryStore()) return memoryStore.createProperty(input);
+  await ensureDbReady();
+  const created = await normalizeProperty(input);
+  await saveProperty(created);
   return created;
 }
 
 export async function updateProperty(id: string, input: PropertyInput) {
-  const properties = await readAll();
-  const index = properties.findIndex((item) => item.id === id);
-  if (index === -1) return null;
+  if (await usingMemoryStore()) return memoryStore.updateProperty(id, input);
+  await ensureDbReady();
+  const existing = await getPropertyById(id);
+  if (!existing) return null;
 
-  const updated = normalizeProperty(input, properties, properties[index]);
-  properties[index] = updated;
-  await writeAll(properties);
+  const updated = await normalizeProperty(input, existing);
+  await updateStoredProperty(updated);
   return updated;
 }
 
 export async function deleteProperty(id: string) {
-  const properties = await readAll();
-  const next = properties.filter((item) => item.id !== id);
-  if (next.length === properties.length) return false;
-  await writeAll(next);
-  return true;
+  if (await usingMemoryStore()) return memoryStore.deleteProperty(id);
+  await ensureDbReady();
+  const affected = await dbExecute("DELETE FROM properties WHERE id = ?", [id]);
+  return affected > 0;
 }

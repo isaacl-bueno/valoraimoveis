@@ -45,27 +45,3 @@ export const testimonials = [
       "https://storage.googleapis.com/uxpilot-auth.appspot.com/gen_ab6a2e6093_e092df3a6a659c77.png",
   },
 ];
-
-export const adminUsers = [
-  {
-    name: "Isaac Bueno",
-    email: "isaac@valoraimoveis.com",
-    role: "Administrador",
-    status: "Ativo" as const,
-    initial: "I",
-  },
-  {
-    name: "Rafael Perini",
-    email: "rafael@valoraimoveis.com",
-    role: "Editor",
-    status: "Ativo" as const,
-    initial: "R",
-  },
-  {
-    name: "Marina Costa",
-    email: "marina@valoraimoveis.com",
-    role: "Editor",
-    status: "Inativo" as const,
-    initial: "M",
-  },
-];

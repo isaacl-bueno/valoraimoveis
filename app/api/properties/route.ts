@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidatePropertyPages } from "@/lib/revalidate";
 import { createProperty, listProperties } from "@/lib/store";
 import type { PropertyInput, PropertyStatus } from "@/lib/types";
 
@@ -19,6 +20,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Título é obrigatório." }, { status: 400 });
     }
     const property = await createProperty(body);
+    revalidatePropertyPages(property.slug);
     return NextResponse.json(property, { status: 201 });
   } catch (error) {
     console.error(error);

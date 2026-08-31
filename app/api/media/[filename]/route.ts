@@ -1,10 +1,9 @@
 import { promises as fs } from "fs";
 import path from "path";
 import { NextResponse } from "next/server";
+import { getUploadDir, shouldServeUploadsViaApi } from "@/lib/storage";
 
 export const runtime = "nodejs";
-
-const UPLOAD_DIR = path.join("/tmp", "valoraimoveis", "uploads");
 
 const CONTENT_TYPES: Record<string, string> = {
   jpg: "image/jpeg",
@@ -19,15 +18,18 @@ type RouteContext = {
 };
 
 export async function GET(_request: Request, context: RouteContext) {
+  if (!shouldServeUploadsViaApi()) {
+    return NextResponse.json({ error: "Uploads servidos estaticamente." }, { status: 404 });
+  }
+
   const { filename } = await context.params;
 
-  // Evita path traversal
   if (!filename || filename.includes("..") || filename.includes("/") || filename.includes("\\")) {
     return NextResponse.json({ error: "Arquivo inválido." }, { status: 400 });
   }
 
   try {
-    const filePath = path.join(UPLOAD_DIR, filename);
+    const filePath = path.join(getUploadDir(), filename);
     const buffer = await fs.readFile(filePath);
     const extension = filename.split(".").pop()?.toLowerCase() || "";
     const contentType = CONTENT_TYPES[extension] || "application/octet-stream";

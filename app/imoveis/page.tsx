@@ -1,10 +1,19 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Suspense } from "react";
 import { PropertyCard } from "@/components/PropertyCard";
 import { DesktopFilters, MobileFilters } from "@/components/PropertyFilters";
 import { PropertySortSelect } from "@/components/PropertySortSelect";
 import { SiteShell } from "@/components/SiteShell";
-import { filterProperties } from "@/lib/property-filters";
+import {
+  buildListFilterOptions,
+  describeActiveFilters,
+  filterProperties,
+  hasActiveFilters,
+  normalizeSortOption,
+  sortProperties,
+  type PropertySearchParams,
+} from "@/lib/property-filters";
 import { listProperties } from "@/lib/store";
 
 export const metadata: Metadata = {
@@ -14,33 +23,16 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 type PageProps = {
-  searchParams: Promise<{
-    intent?: string;
-    onde?: string;
-    tipo?: string;
-    preco?: string;
-    ref?: string;
-  }>;
+  searchParams: Promise<PropertySearchParams>;
 };
 
 export default async function ImoveisPage({ searchParams }: PageProps) {
   const params = await searchParams;
   const all = await listProperties({ publishedOnly: true });
-  const properties = filterProperties(all, params);
-
-  const types = Array.from(new Set(all.map((item) => item.type)))
-    .sort((a, b) => a.localeCompare(b, "pt-BR"))
-    .map((value) => ({ value, label: value }));
-  const cities = Array.from(new Set(all.map((item) => item.city).filter(Boolean)))
-    .sort((a, b) => a.localeCompare(b, "pt-BR"))
-    .map((value) => ({ value, label: value }));
-  const neighborhoods = Array.from(
-    new Set(all.map((item) => item.neighborhood).filter(Boolean)),
-  )
-    .sort((a, b) => a.localeCompare(b, "pt-BR"))
-    .map((value) => ({ value, label: value }));
-
-  const filterProps = { types, cities, neighborhoods };
+  const filtered = filterProperties(all, params);
+  const properties = sortProperties(filtered, normalizeSortOption(params.ordenar));
+  const filterProps = buildListFilterOptions(all);
+  const activeFilters = describeActiveFilters(params);
 
   return (
     <SiteShell>
@@ -54,13 +46,9 @@ export default async function ImoveisPage({ searchParams }: PageProps) {
             <span className="text-ink font-bold">Imóveis</span>
           </nav>
           <h1 className="h-display text-4xl md:text-6xl text-ink">Encontre seu próximo imóvel</h1>
-          {(params.onde || params.tipo || params.preco || params.ref) && (
+          {hasActiveFilters(params) && (
             <p className="text-muted mt-4 text-sm">
-              Filtros aplicados
-              {params.onde ? ` · ${params.onde}` : ""}
-              {params.tipo ? ` · ${params.tipo}` : ""}
-              {params.preco ? ` · preço` : ""}
-              {params.ref ? ` · ref ${params.ref}` : ""}
+              Filtros aplicados: {activeFilters.join(" · ")}
               {" · "}
               <Link href="/imoveis" className="text-brand font-bold hover:underline">
                 Limpar
@@ -78,14 +66,20 @@ export default async function ImoveisPage({ searchParams }: PageProps) {
               <span className="text-xs uppercase tracking-widest text-muted font-bold">
                 Ordenar:
               </span>
-              <PropertySortSelect />
+              <Suspense fallback={null}>
+                <PropertySortSelect />
+              </Suspense>
             </div>
-            <MobileFilters {...filterProps} />
+            <Suspense fallback={null}>
+              <MobileFilters {...filterProps} />
+            </Suspense>
           </div>
         </div>
 
         <div className="flex flex-col md:flex-row gap-12">
-          <DesktopFilters {...filterProps} />
+          <Suspense fallback={null}>
+            <DesktopFilters {...filterProps} />
+          </Suspense>
           <div className="flex-1">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
               {properties.map((property) => (

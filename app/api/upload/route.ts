@@ -2,13 +2,10 @@ import { randomUUID } from "crypto";
 import { promises as fs } from "fs";
 import path from "path";
 import { NextResponse } from "next/server";
+import { getUploadDir, getUploadPublicUrl } from "@/lib/storage";
 
 export const runtime = "nodejs";
 
-const isServerless = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
-const UPLOAD_DIR = isServerless
-  ? path.join("/tmp", "valoraimoveis", "uploads")
-  : path.join(process.cwd(), "public", "uploads");
 const MAX_SIZE = 8 * 1024 * 1024;
 const ALLOWED = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
 
@@ -21,7 +18,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Nenhum arquivo enviado." }, { status: 400 });
     }
 
-    await fs.mkdir(UPLOAD_DIR, { recursive: true });
+    const uploadDir = getUploadDir();
+    await fs.mkdir(uploadDir, { recursive: true });
 
     const urls: string[] = [];
     for (const file of files) {
@@ -41,9 +39,8 @@ export async function POST(request: Request) {
       const extension = file.name.split(".").pop()?.toLowerCase() || "jpg";
       const filename = `${Date.now()}-${randomUUID().slice(0, 8)}.${extension}`;
       const buffer = Buffer.from(await file.arrayBuffer());
-      await fs.writeFile(path.join(UPLOAD_DIR, filename), buffer);
-      // No Vercel arquivos em /tmp precisam ser servidos via API; local usa /public/uploads.
-      urls.push(isServerless ? `/api/media/${filename}` : `/uploads/${filename}`);
+      await fs.writeFile(path.join(uploadDir, filename), buffer);
+      urls.push(getUploadPublicUrl(filename));
     }
 
     return NextResponse.json({ urls });

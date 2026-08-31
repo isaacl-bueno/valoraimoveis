@@ -20,7 +20,6 @@ type HeroSearchProps = {
 };
 
 export function HeroSearch({ options }: HeroSearchProps) {
-  const [intent, setIntent] = useState<"comprar" | "alugar">("comprar");
   const [location, setLocation] = useState("");
   const [type, setType] = useState("");
   const [price, setPrice] = useState("");
@@ -32,7 +31,6 @@ export function HeroSearch({ options }: HeroSearchProps) {
   }, [options.refs]);
 
   const params = new URLSearchParams();
-  if (intent) params.set("intent", intent);
   if (location) params.set("onde", location);
   if (type) params.set("tipo", type);
   if (price) params.set("preco", price);
@@ -44,25 +42,6 @@ export function HeroSearch({ options }: HeroSearchProps) {
 
   return (
     <div className="w-full max-w-6xl bg-white/95 backdrop-blur-md rounded-3xl shadow-2xl border border-white/40 p-3 md:p-4">
-      <div className="flex gap-2 mb-3 md:mb-4">
-        {(
-          [
-            ["comprar", "Comprar"],
-            ["alugar", "Alugar"],
-          ] as const
-        ).map(([value, label]) => (
-          <Button
-            key={value}
-            type="button"
-            size="sm"
-            variant={intent === value ? "default" : "secondary"}
-            onClick={() => setIntent(value)}
-          >
-            {label}
-          </Button>
-        ))}
-      </div>
-
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-[minmax(11rem,1.4fr)_minmax(9rem,1fr)_minmax(10rem,1.2fr)_minmax(9rem,1.1fr)_auto] gap-3 items-end">
         <div className="min-w-0">
           <Label>Onde</Label>

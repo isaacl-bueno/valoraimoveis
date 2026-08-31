@@ -1,7 +1,8 @@
 "use client";
 
 import { SlidersHorizontal, X } from "lucide-react";
-import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,7 +13,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import type { FilterOption } from "@/lib/property-filters";
+import {
+  buildImoveisHref,
+  type FilterOption,
+  type PropertySearchParams,
+} from "@/lib/property-filters";
 
 type PropertyFiltersProps = {
   types?: FilterOption[];
@@ -20,45 +25,80 @@ type PropertyFiltersProps = {
   neighborhoods?: FilterOption[];
 };
 
+function readFiltersFromParams(searchParams: URLSearchParams): PropertySearchParams {
+  return {
+    onde: searchParams.get("onde") ?? undefined,
+    tipo: searchParams.get("tipo") ?? undefined,
+    cidade: searchParams.get("cidade") ?? undefined,
+    bairro: searchParams.get("bairro") ?? undefined,
+    preco: searchParams.get("preco") ?? undefined,
+    precoMin: searchParams.get("precoMin") ?? undefined,
+    precoMax: searchParams.get("precoMax") ?? undefined,
+    ref: searchParams.get("ref") ?? undefined,
+    quartos: searchParams.get("quartos") ?? undefined,
+    banheiros: searchParams.get("banheiros") ?? undefined,
+    vagas: searchParams.get("vagas") ?? undefined,
+    areaMin: searchParams.get("areaMin") ?? undefined,
+    areaMax: searchParams.get("areaMax") ?? undefined,
+    ordenar: searchParams.get("ordenar") ?? undefined,
+  };
+}
+
 function FilterFields({
   compact = false,
   types = [],
   cities = [],
   neighborhoods = [],
-}: PropertyFiltersProps & { compact?: boolean }) {
-  const [rooms, setRooms] = useState<string | null>(null);
-  const [baths, setBaths] = useState<string | null>(null);
-  const [parking, setParking] = useState<string | null>(null);
-  const [type, setType] = useState("");
-  const [city, setCity] = useState("");
-  const [neighborhood, setNeighborhood] = useState("");
+  onApply,
+  onClear,
+}: PropertyFiltersProps & {
+  compact?: boolean;
+  onApply: (filters: PropertySearchParams) => void;
+  onClear: () => void;
+}) {
+  const searchParams = useSearchParams();
+  const initial = useMemo(() => readFiltersFromParams(searchParams), [searchParams]);
 
-  const typeOptions =
-    types.length > 0
-      ? types
-      : [
-          { value: "Casa", label: "Casa" },
-          { value: "Apartamento", label: "Apartamento" },
-          { value: "Cobertura", label: "Cobertura" },
-          { value: "Condomínio", label: "Condomínio" },
-          { value: "Terreno", label: "Terreno" },
-        ];
+  const [type, setType] = useState(initial.tipo ?? "");
+  const [city, setCity] = useState(initial.cidade ?? "");
+  const [neighborhood, setNeighborhood] = useState(initial.bairro ?? "");
+  const [precoMin, setPrecoMin] = useState(initial.precoMin ?? "");
+  const [precoMax, setPrecoMax] = useState(initial.precoMax ?? "");
+  const [rooms, setRooms] = useState<string | null>(initial.quartos ?? null);
+  const [baths, setBaths] = useState<string | null>(initial.banheiros ?? null);
+  const [parking, setParking] = useState<string | null>(initial.vagas ?? null);
+  const [areaMin, setAreaMin] = useState(initial.areaMin ?? "");
+  const [areaMax, setAreaMax] = useState(initial.areaMax ?? "");
 
-  const cityOptions =
-    cities.length > 0
-      ? cities
-      : [
-          { value: "São Paulo", label: "São Paulo" },
-          { value: "Rio de Janeiro", label: "Rio de Janeiro" },
-        ];
+  function applyFilters() {
+    onApply({
+      ...initial,
+      tipo: type || undefined,
+      cidade: city || undefined,
+      bairro: neighborhood || undefined,
+      precoMin: precoMin || undefined,
+      precoMax: precoMax || undefined,
+      quartos: rooms ?? undefined,
+      banheiros: baths ?? undefined,
+      vagas: parking ?? undefined,
+      areaMin: areaMin || undefined,
+      areaMax: areaMax || undefined,
+    });
+  }
 
-  const neighborhoodOptions =
-    neighborhoods.length > 0
-      ? neighborhoods
-      : [
-          { value: "Jardins", label: "Jardins" },
-          { value: "Ipanema", label: "Ipanema" },
-        ];
+  function clearLocal() {
+    setType("");
+    setCity("");
+    setNeighborhood("");
+    setPrecoMin("");
+    setPrecoMax("");
+    setRooms(null);
+    setBaths(null);
+    setParking(null);
+    setAreaMin("");
+    setAreaMax("");
+    onClear();
+  }
 
   const chip = (
     value: string,
@@ -85,10 +125,10 @@ function FilterFields({
         <Label>Tipo de Imóvel</Label>
         <Select value={type || undefined} onValueChange={setType}>
           <SelectTrigger>
-            <SelectValue placeholder="Todos os tipos" />
+            <SelectValue placeholder={types.length ? "Todos os tipos" : "Sem tipos cadastrados"} />
           </SelectTrigger>
           <SelectContent>
-            {typeOptions.map((item) => (
+            {types.map((item) => (
               <SelectItem key={item.value} value={item.value}>
                 {item.label}
               </SelectItem>
@@ -100,10 +140,10 @@ function FilterFields({
         <Label>Cidade</Label>
         <Select value={city || undefined} onValueChange={setCity}>
           <SelectTrigger>
-            <SelectValue placeholder="Todas as cidades" />
+            <SelectValue placeholder={cities.length ? "Todas as cidades" : "Sem cidades cadastradas"} />
           </SelectTrigger>
           <SelectContent>
-            {cityOptions.map((item) => (
+            {cities.map((item) => (
               <SelectItem key={item.value} value={item.value}>
                 {item.label}
               </SelectItem>
@@ -116,10 +156,12 @@ function FilterFields({
           <Label>Bairro</Label>
           <Select value={neighborhood || undefined} onValueChange={setNeighborhood}>
             <SelectTrigger>
-              <SelectValue placeholder="Todos os bairros" />
+              <SelectValue
+                placeholder={neighborhoods.length ? "Todos os bairros" : "Sem bairros cadastrados"}
+              />
             </SelectTrigger>
             <SelectContent>
-              {neighborhoodOptions.map((item) => (
+              {neighborhoods.map((item) => (
                 <SelectItem key={item.value} value={item.value}>
                   {item.label}
                 </SelectItem>
@@ -131,8 +173,16 @@ function FilterFields({
       <div className="space-y-2">
         <Label>Faixa de Preço</Label>
         <div className="grid grid-cols-2 gap-2">
-          <Input placeholder="Mín" />
-          <Input placeholder="Máx" />
+          <Input
+            placeholder="Mín"
+            value={precoMin}
+            onChange={(event) => setPrecoMin(event.target.value.replace(/\D/g, ""))}
+          />
+          <Input
+            placeholder="Máx"
+            value={precoMax}
+            onChange={(event) => setPrecoMax(event.target.value.replace(/\D/g, ""))}
+          />
         </div>
       </div>
       <div className="space-y-2">
@@ -158,20 +208,47 @@ function FilterFields({
           <div className="space-y-2">
             <Label>Área (m²)</Label>
             <div className="grid grid-cols-2 gap-2">
-              <Input placeholder="Área Mín" />
-              <Input placeholder="Área Máx" />
+              <Input
+                placeholder="Área Mín"
+                value={areaMin}
+                onChange={(event) => setAreaMin(event.target.value.replace(/\D/g, ""))}
+              />
+              <Input
+                placeholder="Área Máx"
+                value={areaMax}
+                onChange={(event) => setAreaMax(event.target.value.replace(/\D/g, ""))}
+              />
             </div>
           </div>
         </>
       )}
-      <Button type="button" className="w-full rounded-xl h-12">
+      <Button type="button" className="w-full rounded-xl h-12" onClick={applyFilters}>
         Aplicar Filtros
+      </Button>
+      <Button type="button" variant="ghost" className="w-full" onClick={clearLocal}>
+        Limpar filtros
       </Button>
     </div>
   );
 }
 
+function useFilterNavigation() {
+  const router = useRouter();
+
+  function navigate(filters: PropertySearchParams) {
+    router.push(buildImoveisHref(filters));
+  }
+
+  function clearFilters() {
+    router.push("/imoveis");
+  }
+
+  return { navigate, clearFilters };
+}
+
 export function DesktopFilters(props: PropertyFiltersProps) {
+  const { navigate, clearFilters } = useFilterNavigation();
+
   return (
     <aside className="hidden md:block w-72 flex-shrink-0 space-y-8">
       <div className="flex items-center justify-between">
@@ -179,17 +256,19 @@ export function DesktopFilters(props: PropertyFiltersProps) {
         <button
           type="button"
           className="text-[10px] uppercase tracking-widest text-brand font-bold hover:underline"
+          onClick={clearFilters}
         >
           Limpar filtros
         </button>
       </div>
-      <FilterFields {...props} />
+      <FilterFields {...props} onApply={navigate} onClear={clearFilters} />
     </aside>
   );
 }
 
 export function MobileFilters(props: PropertyFiltersProps) {
   const [open, setOpen] = useState(false);
+  const { navigate, clearFilters } = useFilterNavigation();
 
   return (
     <>
@@ -221,11 +300,19 @@ export function MobileFilters(props: PropertyFiltersProps) {
               </button>
             </div>
             <div className="flex-1 overflow-y-auto pb-8">
-              <FilterFields compact {...props} />
+              <FilterFields
+                compact
+                {...props}
+                onApply={(filters) => {
+                  navigate(filters);
+                  setOpen(false);
+                }}
+                onClear={() => {
+                  clearFilters();
+                  setOpen(false);
+                }}
+              />
             </div>
-            <button type="button" className="w-full text-brand text-sm font-bold py-2">
-              Limpar todos os filtros
-            </button>
           </div>
         </div>
       )}

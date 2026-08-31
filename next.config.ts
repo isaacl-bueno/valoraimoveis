@@ -3,6 +3,8 @@ import path from "path";
 
 const nextConfig: NextConfig = {
   outputFileTracingRoot: path.join(__dirname),
+  // Facilita deploy em VPS Hostinger (Node + PM2)
+  output: "standalone",
   images: {
     remotePatterns: [
       {

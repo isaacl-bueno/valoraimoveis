@@ -1,4 +1,6 @@
 import { cookies } from "next/headers";
+import { verifyPassword } from "@/lib/password";
+import { findUserForLogin } from "@/lib/user-store";
 
 export const SESSION_COOKIE = "valora_admin_session";
 const SESSION_DAYS = 7;
@@ -109,9 +111,10 @@ export async function getServerSession() {
   return verifySessionToken(jar.get(SESSION_COOKIE)?.value);
 }
 
-export function validateCredentials(email: string, password: string) {
-  const admin = getAdminCredentials();
-  return (
-    email.trim().toLowerCase() === admin.email.toLowerCase() && password === admin.password
-  );
+export async function validateCredentials(email: string, password: string) {
+  const user = await findUserForLogin(email);
+  if (!user || user.status !== "Ativo") return null;
+  const valid = await verifyPassword(password, user.passwordHash);
+  if (!valid) return null;
+  return { email: user.email, name: user.name };
 }
