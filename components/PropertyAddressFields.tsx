@@ -22,8 +22,6 @@ export type AddressFormSlice = {
   neighborhood: string;
   city: string;
   state: string;
-  latitude: string;
-  longitude: string;
 };
 
 type PropertyAddressFieldsProps = {
@@ -201,24 +199,6 @@ export function PropertyAddressFields({
             ))}
           </SelectContent>
         </Select>
-      </div>
-
-      <div>
-        <Label htmlFor="property-latitude">Latitude</Label>
-        <Input
-          id="property-latitude"
-          value={values.latitude}
-          onChange={(event) => onChange({ latitude: event.target.value })}
-        />
-      </div>
-
-      <div>
-        <Label htmlFor="property-longitude">Longitude</Label>
-        <Input
-          id="property-longitude"
-          value={values.longitude}
-          onChange={(event) => onChange({ longitude: event.target.value })}
-        />
       </div>
     </div>
   );

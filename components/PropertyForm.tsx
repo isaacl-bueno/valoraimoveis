@@ -25,6 +25,7 @@ import { Separator } from "@/components/ui/separator";
 import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
 import { TEAM_IMOVEL_FORM, TEAM_IMOVIES } from "@/lib/routes";
+import { uploadPropertyImages } from "@/lib/upload-files";
 import type { Property, PropertyStatus } from "@/lib/types";
 
 const ROOM_OPTIONS = ["Sala", "Cozinha", "Escritório", "Lavanderia", "Lavabo", "Dependência"];
@@ -45,8 +46,6 @@ type FormState = {
   neighborhood: string;
   city: string;
   state: string;
-  latitude: string;
-  longitude: string;
   bedrooms: string;
   suites: string;
   bathrooms: string;
@@ -80,8 +79,6 @@ function emptyForm(): FormState {
     neighborhood: "",
     city: "",
     state: "",
-    latitude: "",
-    longitude: "",
     bedrooms: "0",
     suites: "0",
     bathrooms: "0",
@@ -116,8 +113,6 @@ function fromProperty(property: Property): FormState {
     neighborhood: property.neighborhood,
     city: property.city,
     state: property.state,
-    latitude: property.latitude,
-    longitude: property.longitude,
     bedrooms: String(property.bedrooms),
     suites: String(property.suites),
     bathrooms: String(property.bathrooms),
@@ -193,8 +188,8 @@ export function PropertyForm({ initialProperty = null }: PropertyFormProps) {
       neighborhood: form.neighborhood,
       city: form.city,
       state: form.state,
-      latitude: form.latitude,
-      longitude: form.longitude,
+      latitude: initialProperty?.latitude ?? "",
+      longitude: initialProperty?.longitude ?? "",
       bedrooms: Number(form.bedrooms) || 0,
       suites: Number(form.suites) || 0,
       bathrooms: Number(form.bathrooms) || 0,
@@ -279,23 +274,22 @@ export function PropertyForm({ initialProperty = null }: PropertyFormProps) {
   async function onUpload(files: FileList | File[] | null) {
     if (!files?.length) return;
     setError(null);
-    const body = new FormData();
-    Array.from(files).forEach((file) => body.append("files", file));
 
     startTransition(async () => {
-      await withLoading(async () => {
-        const response = await fetch("/api/upload", { method: "POST", body });
-        const data = await response.json();
-        if (!response.ok) {
-          setError(data.error || "Falha no upload.");
-          return;
-        }
-        setForm((current) => ({
-          ...current,
-          images: [...current.images, ...(data.urls as string[])],
-        }));
-        setMessage(`${data.urls.length} foto(s) adicionada(s).`);
-      }, `Enviando ${files.length} foto(s)...`);
+      try {
+        await withLoading(async () => {
+          const urls = await uploadPropertyImages(Array.from(files));
+          setForm((current) => ({
+            ...current,
+            images: [...current.images, ...urls],
+          }));
+          setMessage(`${urls.length} foto(s) adicionada(s).`);
+        }, `Enviando ${files.length} foto(s)...`);
+      } catch (uploadError) {
+        const message =
+          uploadError instanceof Error ? uploadError.message : "Falha no upload.";
+        setError(message);
+      }
     });
   }
 
@@ -465,8 +459,6 @@ export function PropertyForm({ initialProperty = null }: PropertyFormProps) {
                   neighborhood: form.neighborhood,
                   city: form.city,
                   state: form.state,
-                  latitude: form.latitude,
-                  longitude: form.longitude,
                 }}
                 onChange={(patch) => setForm((current) => ({ ...current, ...patch }))}
                 onCepMessage={setMessage}
