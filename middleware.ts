@@ -5,6 +5,7 @@ import { TEAM_BASE, TEAM_IMOVIES, TEAM_LOGIN } from "@/lib/routes";
 
 function isProtectedApi(pathname: string, method: string) {
   if (pathname.startsWith("/api/upload") && method !== "GET") return true;
+  if (pathname.startsWith("/api/admin/") && method !== "GET") return true;
   if (pathname === "/api/properties" && method !== "GET") return true;
   if (pathname.startsWith("/api/properties/") && method !== "GET") return true;
   if (pathname.startsWith("/api/users")) return true;
@@ -56,6 +57,7 @@ export const config = {
     "/api/properties/:path*",
     "/api/upload",
     "/api/upload/client",
+    "/api/admin/:path*",
     "/api/users",
     "/api/users/:path*",
   ],

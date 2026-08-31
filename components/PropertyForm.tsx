@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useRef, useState, useTransition } from "react";
 import { ArrowLeft, CloudUpload } from "lucide-react";
 import { ConfirmDeleteDialog } from "@/components/ConfirmDeleteDialog";
+import { ImageStorageCleanup } from "@/components/ImageStorageCleanup";
 import { ManagedImage } from "@/components/ManagedImage";
 import { PropertyAddressFields } from "@/components/PropertyAddressFields";
 import { useLoading } from "@/components/LoadingProvider";
@@ -709,6 +710,9 @@ export function PropertyForm({ initialProperty = null }: PropertyFormProps) {
                     várias fotos aqui
                   </span>
                 </button>
+              </div>
+              <div className="mt-6 border-t border-line pt-6">
+                <ImageStorageCleanup disabled={pending || uploadingPhotos} />
               </div>
             </CardContent>
           </Card>
