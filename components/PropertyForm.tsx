@@ -162,6 +162,7 @@ export function PropertyForm({ initialProperty = null }: PropertyFormProps) {
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [draggingPhotos, setDraggingPhotos] = useState(false);
 
   function update<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((current) => ({ ...current, [key]: value }));
@@ -274,7 +275,7 @@ export function PropertyForm({ initialProperty = null }: PropertyFormProps) {
     });
   }
 
-  async function onUpload(files: FileList | null) {
+  async function onUpload(files: FileList | File[] | null) {
     if (!files?.length) return;
     setError(null);
     const body = new FormData();
@@ -293,8 +294,34 @@ export function PropertyForm({ initialProperty = null }: PropertyFormProps) {
           images: [...current.images, ...(data.urls as string[])],
         }));
         setMessage(`${data.urls.length} foto(s) adicionada(s).`);
-      }, "Enviando fotos...");
+      }, `Enviando ${files.length} foto(s)...`);
     });
+  }
+
+  function onPhotoDragOver(event: React.DragEvent) {
+    event.preventDefault();
+    event.stopPropagation();
+    setDraggingPhotos(true);
+  }
+
+  function onPhotoDragLeave(event: React.DragEvent) {
+    event.preventDefault();
+    event.stopPropagation();
+    setDraggingPhotos(false);
+  }
+
+  function onPhotoDrop(event: React.DragEvent) {
+    event.preventDefault();
+    event.stopPropagation();
+    setDraggingPhotos(false);
+    const files = Array.from(event.dataTransfer.files).filter((file) =>
+      file.type.startsWith("image/"),
+    );
+    if (!files.length) {
+      setError("Solte apenas arquivos de imagem (JPG, PNG, WebP ou GIF).");
+      return;
+    }
+    void onUpload(files);
   }
 
   function removeImage(index: number) {
@@ -522,7 +549,9 @@ export function PropertyForm({ initialProperty = null }: PropertyFormProps) {
             <CardHeader className="p-7 pb-0 flex-row items-start justify-between space-y-0">
               <div>
                 <CardTitle className="h-display text-2xl font-normal">Fotos</CardTitle>
-                <p className="text-sm text-muted mt-1">Adicione, remova e escolha a capa.</p>
+                <p className="text-sm text-muted mt-1">
+                  Selecione ou arraste várias fotos de uma vez. Escolha qual será a capa.
+                </p>
               </div>
               <Button
                 type="button"
@@ -531,7 +560,7 @@ export function PropertyForm({ initialProperty = null }: PropertyFormProps) {
                 disabled={pending}
                 onClick={() => fileRef.current?.click()}
               >
-                Adicionar fotos
+                Selecionar fotos
               </Button>
               <input
                 ref={fileRef}
@@ -545,8 +574,17 @@ export function PropertyForm({ initialProperty = null }: PropertyFormProps) {
                 }}
               />
             </CardHeader>
-            <CardContent className="p-7">
-              <div className="grid md:grid-cols-3 gap-4">
+            <CardContent
+              className="p-7"
+              onDragOver={onPhotoDragOver}
+              onDragLeave={onPhotoDragLeave}
+              onDrop={onPhotoDrop}
+            >
+              <div
+                className={`grid md:grid-cols-3 gap-4 rounded-2xl transition-colors ${
+                  draggingPhotos ? "outline-2 outline-dashed outline-brand bg-brand/5 p-3 -m-3" : ""
+                }`}
+              >
                 {form.images.map((src, index) => (
                   <div
                     key={`${src}-${index}`}
@@ -591,9 +629,15 @@ export function PropertyForm({ initialProperty = null }: PropertyFormProps) {
                 <button
                   type="button"
                   onClick={() => fileRef.current?.click()}
-                  className="h-40 rounded-2xl border-2 border-dashed border-line flex items-center justify-center text-muted hover:border-brand hover:text-brand transition-colors"
+                  disabled={pending}
+                  className="h-40 rounded-2xl border-2 border-dashed border-line flex flex-col items-center justify-center gap-2 px-4 text-center text-muted hover:border-brand hover:text-brand transition-colors disabled:opacity-50"
                 >
                   <CloudUpload className="h-5 w-5" />
+                  <span className="text-xs font-medium leading-snug">
+                    Clique ou arraste
+                    <br />
+                    várias fotos aqui
+                  </span>
                 </button>
               </div>
             </CardContent>
