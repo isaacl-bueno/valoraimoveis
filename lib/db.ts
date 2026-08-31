@@ -65,7 +65,7 @@ function convertPlaceholders(sql: string) {
 }
 
 let mysqlPool: import("mysql2/promise").Pool | null = null;
-let neonSql: ReturnType<typeof import("@neondatabase/serverless").neon> | null = null;
+let neonPool: import("@neondatabase/serverless").Pool | null = null;
 
 async function getMysqlPool() {
   if (!mysqlPool) {
@@ -80,12 +80,12 @@ async function getMysqlPool() {
   return mysqlPool;
 }
 
-async function getNeonSql() {
-  if (!neonSql) {
-    const { neon } = await import("@neondatabase/serverless");
-    neonSql = neon(getDatabaseUrl());
+async function getNeonPool() {
+  if (!neonPool) {
+    const { Pool } = await import("@neondatabase/serverless");
+    neonPool = new Pool({ connectionString: getDatabaseUrl() });
   }
-  return neonSql;
+  return neonPool;
 }
 
 export async function dbQuery<T = Record<string, unknown>>(
@@ -100,8 +100,9 @@ export async function dbQuery<T = Record<string, unknown>>(
   }
 
   const pgSql = convertPlaceholders(sql);
-  const sqlFn = await getNeonSql();
-  return (await sqlFn.query(pgSql, params)) as T[];
+  const pool = await getNeonPool();
+  const result = await pool.query(pgSql, params);
+  return result.rows as T[];
 }
 
 export async function dbExecute(sql: string, params: unknown[] = []): Promise<number> {
@@ -113,9 +114,9 @@ export async function dbExecute(sql: string, params: unknown[] = []): Promise<nu
   }
 
   const pgSql = convertPlaceholders(sql);
-  const sqlFn = await getNeonSql();
-  const result = await sqlFn.query(pgSql, params);
-  return Array.isArray(result) ? result.length : 0;
+  const pool = await getNeonPool();
+  const result = await pool.query(pgSql, params);
+  return result.rowCount ?? 0;
 }
 
 export async function createSchema() {
@@ -261,5 +262,5 @@ export async function ensureDbReady() {
 export function resetDbReady() {
   dbReady = null;
   mysqlPool = null;
-  neonSql = null;
+  neonPool = null;
 }

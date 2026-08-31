@@ -4,25 +4,24 @@ type Backend = "memory" | "db";
 
 let resolvedBackend: Backend | null = null;
 
-/** Usa arquivo/ memória quando não há banco configurado (Vercel sem Neon, dev local). */
+/** Com DATABASE_URL usa banco; sem banco usa arquivo local (/tmp na Vercel). */
 export async function usingMemoryStore(): Promise<boolean> {
   if (resolvedBackend === "memory") return true;
   if (resolvedBackend === "db") return false;
 
-  if (process.env.USE_MEMORY_DB === "true" || !isDatabaseConfigured()) {
+  if (process.env.USE_MEMORY_DB === "true") {
     resolvedBackend = "memory";
     return true;
   }
 
-  try {
-    await ensureDbReady();
-    resolvedBackend = "db";
-    return false;
-  } catch (error) {
-    console.warn("[Valora] Banco indisponível — usando armazenamento em arquivo.", error);
+  if (!isDatabaseConfigured()) {
     resolvedBackend = "memory";
     return true;
   }
+
+  await ensureDbReady();
+  resolvedBackend = "db";
+  return false;
 }
 
 export function resetStoreBackend() {
