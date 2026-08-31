@@ -1,6 +1,6 @@
 import { randomUUID } from "crypto";
 import { NextResponse } from "next/server";
-import { saveUploadedFile } from "@/lib/upload-storage";
+import { saveUploadedFile, describeUploadError } from "@/lib/upload-storage";
 import { usesBlobStorage } from "@/lib/storage";
 
 export const runtime = "nodejs";
@@ -53,7 +53,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ urls });
   } catch (error) {
-    console.error(error);
-    return NextResponse.json({ error: "Falha no upload." }, { status: 500 });
+    console.error("Upload failed:", error);
+    return NextResponse.json({ error: describeUploadError(error) }, { status: 500 });
   }
 }

@@ -9,9 +9,14 @@ export function usesBlobStorage() {
   );
 }
 
-/** Fotos do site precisam ser públicas; use BLOB_ACCESS=private só se servir via /api/media. */
+/** Fotos do site: private store (padrão Vercel) ou BLOB_ACCESS=public se o store for público. */
 export function getBlobAccess(): "public" | "private" {
-  return process.env.BLOB_ACCESS?.trim().toLowerCase() === "private" ? "private" : "public";
+  const configured = process.env.BLOB_ACCESS?.trim().toLowerCase();
+  if (configured === "private" || configured === "public") {
+    return configured;
+  }
+  if (process.env.VERCEL) return "private";
+  return "public";
 }
 
 /** Opcional: múltiplos Blob stores (BLOB_STORE_ID na Vercel). */

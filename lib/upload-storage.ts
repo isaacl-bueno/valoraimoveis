@@ -26,24 +26,52 @@ function blobPathname(filename: string) {
   return `uploads/${filename}`;
 }
 
+function isBlobAccessMismatch(error: unknown) {
+  if (!(error instanceof Error)) return false;
+  return (
+    error.name === "BlobAccessError" ||
+    /access.*(public|private)/i.test(error.message) ||
+    /does not match.*store/i.test(error.message)
+  );
+}
+
+function uploadUrlForBlob(access: "public" | "private", blobUrl: string, filename: string) {
+  if (access === "private") return getUploadPublicUrl(filename);
+  return blobUrl;
+}
+
+async function putToBlob(filename: string, buffer: Buffer, contentType: string) {
+  const pathname = blobPathname(filename);
+  const baseOptions = {
+    contentType,
+    addRandomSuffix: false,
+    ...getBlobCommandOptions(),
+  };
+
+  const preferred = getBlobAccess();
+  const fallback: "public" | "private" = preferred === "public" ? "private" : "public";
+  let lastError: unknown;
+
+  for (const access of [preferred, fallback]) {
+    try {
+      const blob = await put(pathname, buffer, { access, ...baseOptions });
+      return uploadUrlForBlob(access, blob.url, filename);
+    } catch (error) {
+      lastError = error;
+      if (access === fallback || !isBlobAccessMismatch(error)) {
+        throw error;
+      }
+    }
+  }
+
+  throw lastError instanceof Error ? lastError : new Error("Falha ao enviar imagem para o Blob.");
+}
+
 export async function saveUploadedFile(filename: string, buffer: Buffer) {
   const contentType = contentTypeForFilename(filename);
 
   if (usesBlobStorage()) {
-    const access = getBlobAccess();
-    const blob = await put(blobPathname(filename), buffer, {
-      access,
-      contentType,
-      addRandomSuffix: false,
-      ...getBlobCommandOptions(),
-    });
-
-    // Blobs privados não abrem direto no browser — servimos via /api/media.
-    if (access === "private") {
-      return getUploadPublicUrl(filename);
-    }
-
-    return blob.url;
+    return putToBlob(filename, buffer, contentType);
   }
 
   const uploadDir = getUploadDir();
@@ -56,28 +84,32 @@ export async function readUploadedBlob(filename: string) {
   if (!usesBlobStorage()) return null;
 
   const pathname = blobPathname(filename);
-  const access = getBlobAccess();
-  const options = { access, ...getBlobCommandOptions() };
+  const preferred = getBlobAccess();
+  const fallback: "public" | "private" = preferred === "public" ? "private" : "public";
+  const commandOptions = getBlobCommandOptions();
+
+  for (const access of [preferred, fallback]) {
+    try {
+      const result = await get(pathname, { access, ...commandOptions });
+      if (result?.statusCode === 200) return result;
+    } catch {
+      // try fallback access mode
+    }
+  }
 
   try {
-    const result = await get(pathname, options);
-    if (!result || result.statusCode !== 200) return null;
-    return result;
+    const blob = await head(pathname, commandOptions);
+    const response = await fetch(blob.url);
+    if (!response.ok) return null;
+    return {
+      stream: response.body,
+      blob: {
+        contentType: blob.contentType || contentTypeForFilename(filename),
+      },
+      statusCode: response.status,
+    };
   } catch {
-    try {
-      const blob = await head(pathname, getBlobCommandOptions());
-      const response = await fetch(blob.url);
-      if (!response.ok) return null;
-      return {
-        stream: response.body,
-        blob: {
-          contentType: blob.contentType || contentTypeForFilename(filename),
-        },
-        statusCode: response.status,
-      };
-    } catch {
-      return null;
-    }
+    return null;
   }
 }
 
@@ -90,6 +122,25 @@ export async function findBlobUrlByFilename(filename: string) {
   } catch {
     return null;
   }
+}
+
+export function describeUploadError(error: unknown) {
+  if (!(error instanceof Error)) return "Falha no upload.";
+
+  if (error.name === "BlobStoreNotFoundError") {
+    return "Blob Store não encontrado. Verifique BLOB_READ_WRITE_TOKEN_STORE_ID na Vercel.";
+  }
+
+  if (error.name === "BlobAccessError") {
+    return "Tipo de acesso incompatível com o Blob Store. Defina BLOB_ACCESS=private ou public na Vercel.";
+  }
+
+  if (/token|oidc|unauthorized|authentication/i.test(error.message)) {
+    return "Falha de autenticação no Vercel Blob. Reconecte o store ao projeto e faça redeploy.";
+  }
+
+  if (error.message.trim()) return error.message;
+  return "Falha no upload.";
 }
 
 export { contentTypeForFilename };
