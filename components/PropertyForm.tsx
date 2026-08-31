@@ -1,11 +1,11 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useRef, useState, useTransition } from "react";
 import { ArrowLeft, CloudUpload } from "lucide-react";
 import { ConfirmDeleteDialog } from "@/components/ConfirmDeleteDialog";
+import { ManagedImage } from "@/components/ManagedImage";
 import { PropertyAddressFields } from "@/components/PropertyAddressFields";
 import { useLoading } from "@/components/LoadingProvider";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -580,7 +580,7 @@ export function PropertyForm({ initialProperty = null }: PropertyFormProps) {
                       index === form.coverIndex ? "border-brand" : "border-line"
                     }`}
                   >
-                    <Image
+                    <ManagedImage
                       className="object-cover"
                       src={src}
                       alt=""

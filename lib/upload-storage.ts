@@ -1,4 +1,4 @@
-import { put, list } from "@vercel/blob";
+import { head, put } from "@vercel/blob";
 import { promises as fs } from "fs";
 import path from "path";
 import { getUploadDir, getUploadPublicUrl, usesBlobStorage } from "@/lib/storage";
@@ -38,9 +38,12 @@ export async function findBlobUrlByFilename(filename: string) {
   if (!usesBlobStorage()) return null;
 
   const pathname = `uploads/${filename}`;
-  const { blobs } = await list({ prefix: pathname, limit: 1 });
-  const match = blobs.find((blob) => blob.pathname === pathname);
-  return match?.url ?? null;
+  try {
+    const blob = await head(pathname);
+    return blob.url;
+  } catch {
+    return null;
+  }
 }
 
 export { contentTypeForFilename };

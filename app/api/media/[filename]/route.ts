@@ -20,7 +20,18 @@ export async function GET(_request: Request, context: RouteContext) {
   if (usesBlobStorage()) {
     const blobUrl = await findBlobUrlByFilename(filename);
     if (blobUrl) {
-      return NextResponse.redirect(blobUrl, 307);
+      const blobResponse = await fetch(blobUrl);
+      if (!blobResponse.ok) {
+        return NextResponse.json({ error: "Arquivo não encontrado." }, { status: 404 });
+      }
+
+      const buffer = await blobResponse.arrayBuffer();
+      return new NextResponse(buffer, {
+        headers: {
+          "Content-Type": contentTypeForFilename(filename),
+          "Cache-Control": "public, max-age=31536000, immutable",
+        },
+      });
     }
     return NextResponse.json({ error: "Arquivo não encontrado." }, { status: 404 });
   }

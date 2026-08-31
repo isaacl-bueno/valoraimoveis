@@ -1,14 +1,28 @@
 import { randomUUID } from "crypto";
 import { NextResponse } from "next/server";
 import { saveUploadedFile } from "@/lib/upload-storage";
+import { usesBlobStorage } from "@/lib/storage";
 
 export const runtime = "nodejs";
 
 const MAX_SIZE = 8 * 1024 * 1024;
 const ALLOWED = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
 
+function vercelWithoutBlob() {
+  return Boolean(process.env.VERCEL) && !usesBlobStorage();
+}
+
 export async function POST(request: Request) {
   try {
+    if (vercelWithoutBlob()) {
+      return NextResponse.json(
+        {
+          error:
+            "Armazenamento de imagens não configurado na Vercel. Conecte um Blob Store ao projeto (Storage → Blob) e faça redeploy.",
+        },
+        { status: 503 },
+      );
+    }
     const formData = await request.formData();
     const files = formData.getAll("files").filter((item): item is File => item instanceof File);
 

@@ -1,11 +1,11 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
 import { Eye, ImageIcon, Pencil, Trash2 } from "lucide-react";
 import { ConfirmDeleteDialog } from "@/components/ConfirmDeleteDialog";
+import { ManagedImage } from "@/components/ManagedImage";
 import { useLoading } from "@/components/LoadingProvider";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -127,7 +127,7 @@ export function AdminPropertiesTable({ items }: AdminPropertiesTableProps) {
             className="grid grid-cols-1 md:grid-cols-[90px_1fr_120px_180px_130px_110px_130px] gap-4 md:gap-0 items-center px-6 py-5 border-t border-line"
           >
             {item.image ? (
-              <Image
+              <ManagedImage
                 className="w-20 h-16 rounded-xl object-cover bg-surface"
                 src={item.image}
                 alt=""

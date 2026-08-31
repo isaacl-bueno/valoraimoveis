@@ -6,6 +6,14 @@ const nextConfig: NextConfig = {
   // Facilita deploy em VPS Hostinger (Node + PM2)
   output: "standalone",
   images: {
+    localPatterns: [
+      {
+        pathname: "/api/media/**",
+      },
+      {
+        pathname: "/uploads/**",
+      },
+    ],
     remotePatterns: [
       {
         protocol: "https",
