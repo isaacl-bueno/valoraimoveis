@@ -225,7 +225,10 @@ export async function listProperties(options?: {
   status?: PropertyStatus | "all";
   publishedOnly?: boolean;
 }) {
-  if (await usingMemoryStore()) return memoryStore.listProperties(options);
+  if (await usingMemoryStore()) {
+    await memoryStore.ensureMemoryStoreLoaded();
+    return memoryStore.listProperties(options);
+  }
   await ensureDbReady();
 
   let rows: PropertyRow[];
@@ -246,7 +249,10 @@ export async function listProperties(options?: {
 }
 
 export async function getPropertyBySlug(slug: string) {
-  if (await usingMemoryStore()) return memoryStore.getPropertyBySlug(slug);
+  if (await usingMemoryStore()) {
+    await memoryStore.ensureMemoryStoreLoaded();
+    return memoryStore.getPropertyBySlug(slug);
+  }
   await ensureDbReady();
   const rows = await dbQuery<PropertyRow>("SELECT * FROM properties WHERE slug = ? LIMIT 1", [
     slug,
@@ -255,14 +261,20 @@ export async function getPropertyBySlug(slug: string) {
 }
 
 export async function getPropertyById(id: string) {
-  if (await usingMemoryStore()) return memoryStore.getPropertyById(id);
+  if (await usingMemoryStore()) {
+    await memoryStore.ensureMemoryStoreLoaded();
+    return memoryStore.getPropertyById(id);
+  }
   await ensureDbReady();
   const rows = await dbQuery<PropertyRow>("SELECT * FROM properties WHERE id = ? LIMIT 1", [id]);
   return rows[0] ? rowToProperty(rows[0]) : null;
 }
 
 export async function listAdminProperties(): Promise<AdminPropertyListItem[]> {
-  if (await usingMemoryStore()) return memoryStore.listAdminProperties();
+  if (await usingMemoryStore()) {
+    await memoryStore.ensureMemoryStoreLoaded();
+    return memoryStore.listAdminProperties();
+  }
   const properties = await listProperties();
   return properties.map((item) => ({
     id: item.id,
@@ -278,7 +290,10 @@ export async function listAdminProperties(): Promise<AdminPropertyListItem[]> {
 }
 
 export async function createProperty(input: PropertyInput) {
-  if (await usingMemoryStore()) return memoryStore.createProperty(input);
+  if (await usingMemoryStore()) {
+    await memoryStore.ensureMemoryStoreLoaded();
+    return memoryStore.createProperty(input);
+  }
   await ensureDbReady();
   const created = await normalizeProperty(input);
   await saveProperty(created);
@@ -286,7 +301,10 @@ export async function createProperty(input: PropertyInput) {
 }
 
 export async function updateProperty(id: string, input: PropertyInput) {
-  if (await usingMemoryStore()) return memoryStore.updateProperty(id, input);
+  if (await usingMemoryStore()) {
+    await memoryStore.ensureMemoryStoreLoaded();
+    return memoryStore.updateProperty(id, input);
+  }
   await ensureDbReady();
   const existing = await getPropertyById(id);
   if (!existing) return null;
@@ -297,7 +315,10 @@ export async function updateProperty(id: string, input: PropertyInput) {
 }
 
 export async function deleteProperty(id: string) {
-  if (await usingMemoryStore()) return memoryStore.deleteProperty(id);
+  if (await usingMemoryStore()) {
+    await memoryStore.ensureMemoryStoreLoaded();
+    return memoryStore.deleteProperty(id);
+  }
   await ensureDbReady();
   const affected = await dbExecute("DELETE FROM properties WHERE id = ?", [id]);
   return affected > 0;

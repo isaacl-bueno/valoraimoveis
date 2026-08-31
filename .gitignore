@@ -10,3 +10,4 @@ next-env.d.ts
 public/uploads/*
 !public/uploads/.gitkeep
 data/properties.json
+data/users.json

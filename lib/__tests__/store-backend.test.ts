@@ -14,7 +14,8 @@ describe("store-backend", () => {
     resetStoreBackend();
   });
 
-  it("usa memória em dev quando banco não está configurado", async () => {
+  it("usa arquivo quando banco não está configurado", async () => {
+    process.env.NODE_ENV = "production";
     delete process.env.DATABASE_URL;
     delete process.env.DB_HOST;
     delete process.env.DB_USER;
@@ -22,12 +23,10 @@ describe("store-backend", () => {
     delete process.env.DB_PROVIDER;
     delete process.env.USE_MEMORY_DB;
 
-    if (process.env.NODE_ENV === "development") {
-      await expect(usingMemoryStore()).resolves.toBe(true);
-    }
+    await expect(usingMemoryStore()).resolves.toBe(true);
   });
 
-  it("usa memória quando USE_MEMORY_DB=true", async () => {
+  it("usa arquivo quando USE_MEMORY_DB=true", async () => {
     process.env.USE_MEMORY_DB = "true";
     await expect(usingMemoryStore()).resolves.toBe(true);
   });

@@ -14,6 +14,14 @@ export function getUploadDir() {
   return path.join("/tmp", "valoraimoveis", "uploads");
 }
 
+/** JSON de imóveis/usuários: disco local ou /tmp na Vercel. */
+export function getDataDir() {
+  if (usesPersistentStorage()) {
+    return path.join(process.cwd(), "data");
+  }
+  return path.join("/tmp", "valoraimoveis", "data");
+}
+
 export function getUploadPublicUrl(filename: string) {
   if (usesPersistentStorage()) {
     return `/uploads/${filename}`;

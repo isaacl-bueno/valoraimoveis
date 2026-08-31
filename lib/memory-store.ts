@@ -1,11 +1,34 @@
 import { randomUUID } from "crypto";
 import { buildLocationShort, formatPrice, slugify } from "@/lib/format";
+import { readJsonFile, writeJsonFile } from "@/lib/json-file";
 import type { AdminPropertyListItem, Property, PropertyInput, PropertyStatus } from "@/lib/types";
 
 let memoryProperties: Property[] | null = null;
+let loadPromise: Promise<void> | null = null;
+let skipPersistence = false;
 
 export function resetMemoryStoreForTests() {
   memoryProperties = [];
+  loadPromise = null;
+  skipPersistence = true;
+}
+
+export async function ensureMemoryStoreLoaded() {
+  if (skipPersistence && memoryProperties !== null) return;
+  if (!loadPromise) {
+    loadPromise = (async () => {
+      if (memoryProperties !== null) return;
+      memoryProperties = await readJsonFile<Property[]>("properties.json", []);
+    })();
+  }
+  await loadPromise;
+}
+
+function schedulePersist() {
+  if (skipPersistence) return;
+  void writeJsonFile("properties.json", getMemoryProperties()).catch((error) => {
+    console.error("[Valora] Falha ao salvar imóveis.", error);
+  });
 }
 
 function getMemoryProperties() {
@@ -141,6 +164,7 @@ export function createProperty(input: PropertyInput) {
   const properties = getMemoryProperties();
   const created = normalizeProperty(input, properties);
   properties.unshift(created);
+  schedulePersist();
   return created;
 }
 
@@ -150,6 +174,7 @@ export function updateProperty(id: string, input: PropertyInput) {
   if (index === -1) return null;
   const updated = normalizeProperty(input, properties, properties[index]);
   properties[index] = updated;
+  schedulePersist();
   return updated;
 }
 
@@ -158,5 +183,6 @@ export function deleteProperty(id: string) {
   const next = properties.filter((item) => item.id !== id);
   if (next.length === properties.length) return false;
   memoryProperties = next;
+  schedulePersist();
   return true;
 }

@@ -1,5 +1,5 @@
 import { randomUUID } from "crypto";
-import { getAdminCredentials } from "@/lib/auth";
+import { getAdminCredentials } from "@/lib/admin-credentials";
 import { dbExecute, dbQuery, ensureDbReady, getDbProvider } from "@/lib/db";
 import * as memoryUsers from "@/lib/memory-users";
 import { hashPassword } from "@/lib/password";

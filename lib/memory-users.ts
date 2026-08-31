@@ -1,5 +1,6 @@
 import { randomUUID } from "crypto";
-import { getAdminCredentials } from "@/lib/auth";
+import { getAdminCredentials } from "@/lib/admin-credentials";
+import { readJsonFile, writeJsonFile } from "@/lib/json-file";
 import { hashPassword } from "@/lib/password";
 import type {
   AdminUserListItem,
@@ -12,10 +13,12 @@ export const DEFAULT_ADMIN_ID = "default-admin";
 
 let memoryUsers: AdminUserRecord[] | null = null;
 let defaultUserReady: Promise<void> | null = null;
+let skipPersistence = false;
 
 export function resetMemoryUsersForTests() {
   memoryUsers = null;
   defaultUserReady = null;
+  skipPersistence = true;
 }
 
 function getUsers() {
@@ -23,6 +26,13 @@ function getUsers() {
     memoryUsers = [];
   }
   return memoryUsers;
+}
+
+function schedulePersist() {
+  if (skipPersistence) return;
+  void writeJsonFile("users.json", getUsers()).catch((error) => {
+    console.error("[Valora] Falha ao salvar usuários.", error);
+  });
 }
 
 function toListItem(user: AdminUserRecord): AdminUserListItem {
@@ -40,6 +50,10 @@ function toListItem(user: AdminUserRecord): AdminUserListItem {
 export async function ensureDefaultUser() {
   if (!defaultUserReady) {
     defaultUserReady = (async () => {
+      if (memoryUsers === null) {
+        memoryUsers = await readJsonFile<AdminUserRecord[]>("users.json", []);
+      }
+
       const users = getUsers();
       if (users.some((user) => user.isDefault)) return;
 
@@ -56,6 +70,7 @@ export async function ensureDefaultUser() {
         createdAt: now,
         updatedAt: now,
       });
+      schedulePersist();
     })();
   }
   await defaultUserReady;
@@ -99,6 +114,7 @@ export async function createMemoryUser(input: CreateUserInput) {
     updatedAt: now,
   };
   users.push(user);
+  schedulePersist();
   return toListItem(user);
 }
 
@@ -127,6 +143,7 @@ export async function updateMemoryUser(id: string, input: UpdateUserInput) {
     updatedAt: new Date().toISOString(),
   };
   users[index] = updated;
+  schedulePersist();
   return toListItem(updated);
 }
 
@@ -141,6 +158,7 @@ export async function updateMemoryUserPassword(id: string, password: string) {
     passwordHash: await hashPassword(password),
     updatedAt: new Date().toISOString(),
   };
+  schedulePersist();
   return toListItem(users[index]);
 }
 
@@ -153,5 +171,6 @@ export async function deleteMemoryUser(id: string) {
     throw new Error("O administrador padrão não pode ser excluído.");
   }
   users.splice(index, 1);
+  schedulePersist();
   return true;
 }

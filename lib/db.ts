@@ -10,10 +10,10 @@ export function isDatabaseConfigured(): boolean {
   return Boolean(host && user && database);
 }
 
-/** Em dev local sem banco configurado, usa dados em memória. */
-export function useMemoryInDev(): boolean {
+/** Força armazenamento em arquivo (sem MySQL/Postgres). Padrão quando banco não está configurado. */
+export function memoryStoreInDev(): boolean {
   if (process.env.USE_MEMORY_DB === "true") return true;
-  return process.env.NODE_ENV === "development" && !isDatabaseConfigured();
+  return !isDatabaseConfigured();
 }
 
 export function getDbProvider(): DbProvider {
