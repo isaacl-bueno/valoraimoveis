@@ -9,7 +9,10 @@ const BATCH_MAX_BYTES = 4 * 1024 * 1024;
 const BATCH_MAX_FILES = 5;
 const CLIENT_UPLOAD_CONCURRENCY = 6;
 
+export type UploadProgressPhase = "preparing" | "uploading" | "completed" | "error";
+
 export type UploadProgressUpdate = {
+  phase: UploadProgressPhase;
   percent: number;
   uploadedFiles: number;
   totalFiles: number;
@@ -17,6 +20,7 @@ export type UploadProgressUpdate = {
   totalBytes: number;
   batchIndex: number;
   batchCount: number;
+  message?: string;
 };
 
 export type UploadProgressCallback = (progress: UploadProgressUpdate) => void;
@@ -30,6 +34,42 @@ type UploadJson = {
   error?: string;
   urls?: string[];
 };
+
+function scaleUploadPercent(rawPercent: number) {
+  const clamped = Math.min(100, Math.max(0, rawPercent));
+  return Math.min(99, Math.round(2 + clamped * 0.97));
+}
+
+function buildProgress(
+  partial: Omit<UploadProgressUpdate, "phase" | "percent"> & {
+    phase: UploadProgressPhase;
+    rawPercent?: number;
+    percent?: number;
+    message?: string;
+  },
+): UploadProgressUpdate {
+  const percent =
+    partial.percent ??
+    (partial.phase === "preparing"
+      ? 0
+      : partial.phase === "completed"
+        ? 100
+        : partial.phase === "error"
+          ? partial.rawPercent ?? 0
+          : scaleUploadPercent(partial.rawPercent ?? 0));
+
+  return {
+    phase: partial.phase,
+    percent,
+    uploadedFiles: partial.uploadedFiles,
+    totalFiles: partial.totalFiles,
+    uploadedBytes: partial.uploadedBytes,
+    totalBytes: partial.totalBytes,
+    batchIndex: partial.batchIndex,
+    batchCount: partial.batchCount,
+    message: partial.message,
+  };
+}
 
 export function chunkUploadFiles(files: File[]) {
   const batches: File[][] = [];
@@ -133,39 +173,58 @@ async function uploadViaServer(
 
   const report = (batchIndex: number, batchLoaded = 0) => {
     const uploadedBytes = completedBytes + batchLoaded;
-    const percent =
+    const rawPercent =
       totalBytes > 0
-        ? Math.min(100, Math.round((uploadedBytes / totalBytes) * 100))
-        : Math.min(
-            100,
-            Math.round(((uploadedFiles + (batchLoaded > 0 ? 0.5 : 0)) / totalFiles) * 100),
-          );
+        ? (uploadedBytes / totalBytes) * 100
+        : totalFiles > 0
+          ? (uploadedFiles / totalFiles) * 100
+          : 0;
 
-    onProgress?.({
-      percent,
-      uploadedFiles,
-      totalFiles,
-      uploadedBytes,
-      totalBytes,
-      batchIndex: batchIndex + 1,
-      batchCount: batches.length,
-    });
+    onProgress?.(
+      buildProgress({
+        phase: "uploading",
+        rawPercent,
+        uploadedFiles,
+        totalFiles,
+        uploadedBytes,
+        totalBytes,
+        batchIndex: batchIndex + 1,
+        batchCount: batches.length,
+        message: "Enviando fotos...",
+      }),
+    );
   };
-
-  report(0);
 
   for (let index = 0; index < batches.length; index++) {
     const batch = batches[index];
     const batchBytes = batchByteSize(batch);
 
-    const batchUrls = await uploadBatchWithProgress(batch, (loaded) => {
-      report(index, loaded);
-    });
+    try {
+      const batchUrls = await uploadBatchWithProgress(batch, (loaded) => {
+        report(index, loaded);
+      });
 
-    urls.push(...batchUrls);
-    uploadedFiles += batch.length;
-    completedBytes += batchBytes;
-    report(index, batchBytes);
+      urls.push(...batchUrls);
+      uploadedFiles += batch.length;
+      completedBytes += batchBytes;
+      report(index, batchBytes);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Falha no upload.";
+      onProgress?.(
+        buildProgress({
+          phase: "error",
+          rawPercent: totalBytes > 0 ? (completedBytes / totalBytes) * 100 : 0,
+          uploadedFiles,
+          totalFiles,
+          uploadedBytes: completedBytes,
+          totalBytes,
+          batchIndex: index + 1,
+          batchCount: batches.length,
+          message,
+        }),
+      );
+      throw error;
+    }
   }
 
   return urls;
@@ -174,15 +233,15 @@ async function uploadViaServer(
 async function uploadSingleFileDirect(
   file: File,
   access: "public" | "private",
-  onFileProgress?: (loaded: number) => void,
+  onFileProgress?: (loaded: number, total: number) => void,
 ) {
   const pathname = buildPropertyImagePathname(file.name);
   const blob = await uploadPresigned(pathname, file, {
     access,
     handleUploadUrl: "/api/upload/client",
     contentType: file.type,
-    onUploadProgress: ({ loaded }) => {
-      onFileProgress?.(loaded);
+    onUploadProgress: ({ loaded, total }) => {
+      onFileProgress?.(loaded, total || file.size);
     },
   });
 
@@ -223,70 +282,166 @@ async function uploadViaBlobClient(
   const totalFiles = files.length;
   const totalBytes = files.reduce((sum, file) => sum + file.size, 0);
   const fileBytesLoaded = new Array<number>(files.length).fill(0);
+  const fileStarted = new Array<boolean>(files.length).fill(false);
   const urls = new Array<string>(files.length);
   let completedFiles = 0;
 
-  const report = () => {
+  const report = (phase: UploadProgressPhase = "uploading") => {
     const uploadedBytes = fileBytesLoaded.reduce((sum, value) => sum + value, 0);
-    const percent =
+    const startedFiles = fileStarted.filter(Boolean).length;
+    const rawPercent =
       totalBytes > 0
-        ? Math.min(100, Math.round((uploadedBytes / totalBytes) * 100))
-        : Math.min(100, Math.round((completedFiles / totalFiles) * 100));
+        ? (uploadedBytes / totalBytes) * 100
+        : totalFiles > 0
+          ? ((completedFiles + startedFiles * 0.15) / totalFiles) * 100
+          : 0;
 
-    onProgress?.({
-      percent,
-      uploadedFiles: completedFiles,
-      totalFiles,
-      uploadedBytes,
-      totalBytes,
-      batchIndex: Math.min(completedFiles + 1, totalFiles),
-      batchCount: totalFiles,
-    });
+    onProgress?.(
+      buildProgress({
+        phase,
+        rawPercent,
+        uploadedFiles: completedFiles,
+        totalFiles,
+        uploadedBytes,
+        totalBytes,
+        batchIndex: Math.min(completedFiles + 1, totalFiles),
+        batchCount: totalFiles,
+        message: phase === "uploading" ? "Enviando fotos..." : undefined,
+      }),
+    );
   };
 
-  report();
+  report("uploading");
 
   await runWithConcurrency(files, CLIENT_UPLOAD_CONCURRENCY, async (file, index) => {
-    urls[index] = await uploadSingleFileDirect(file, access, (loaded) => {
-      fileBytesLoaded[index] = loaded;
-      report();
-    });
-    fileBytesLoaded[index] = file.size;
-    completedFiles += 1;
-    report();
-  });
+    fileStarted[index] = true;
+    report("uploading");
 
-  onProgress?.({
-    percent: 100,
-    uploadedFiles: totalFiles,
-    totalFiles,
-    uploadedBytes: totalBytes,
-    totalBytes,
-    batchIndex: totalFiles,
-    batchCount: totalFiles,
+    try {
+      urls[index] = await uploadSingleFileDirect(file, access, (loaded, total) => {
+        fileBytesLoaded[index] = Math.min(loaded, total);
+        report("uploading");
+      });
+      fileBytesLoaded[index] = file.size;
+      completedFiles += 1;
+      report("uploading");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Falha no upload.";
+      onProgress?.(
+        buildProgress({
+          phase: "error",
+          rawPercent:
+            totalBytes > 0
+              ? scaleUploadPercent(
+                  (fileBytesLoaded.reduce((sum, value) => sum + value, 0) / totalBytes) * 100,
+                )
+              : scaleUploadPercent((completedFiles / totalFiles) * 100),
+          uploadedFiles: completedFiles,
+          totalFiles,
+          uploadedBytes: fileBytesLoaded.reduce((sum, value) => sum + value, 0),
+          totalBytes,
+          batchIndex: index + 1,
+          batchCount: totalFiles,
+          message,
+        }),
+      );
+      throw error;
+    }
   });
 
   return urls;
 }
 
 export async function uploadPropertyImages(files: File[], onProgress?: UploadProgressCallback) {
-  const config = await fetchUploadConfig();
+  const totalFiles = files.length;
+  const totalBytes = files.reduce((sum, file) => sum + file.size, 0);
 
-  if (config.strategy === "blob-client") {
-    return uploadViaBlobClient(files, config.access, onProgress);
+  onProgress?.(
+    buildProgress({
+      phase: "preparing",
+      percent: 0,
+      uploadedFiles: 0,
+      totalFiles,
+      uploadedBytes: 0,
+      totalBytes,
+      batchIndex: 0,
+      batchCount: totalFiles,
+      message: "Preparando envio...",
+    }),
+  );
+
+  let config: UploadConfigResponse;
+  try {
+    config = await fetchUploadConfig();
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Não foi possível preparar o upload.";
+    onProgress?.(
+      buildProgress({
+        phase: "error",
+        percent: 0,
+        uploadedFiles: 0,
+        totalFiles,
+        uploadedBytes: 0,
+        totalBytes,
+        batchIndex: 0,
+        batchCount: totalFiles,
+        message,
+      }),
+    );
+    throw error;
   }
 
-  const urls = await uploadViaServer(files, onProgress);
+  onProgress?.(
+    buildProgress({
+      phase: "uploading",
+      rawPercent: 0,
+      uploadedFiles: 0,
+      totalFiles,
+      uploadedBytes: 0,
+      totalBytes,
+      batchIndex: 1,
+      batchCount: totalFiles,
+      message: "Enviando fotos...",
+    }),
+  );
 
-  onProgress?.({
-    percent: 100,
-    uploadedFiles: files.length,
-    totalFiles: files.length,
-    uploadedBytes: files.reduce((sum, file) => sum + file.size, 0),
-    totalBytes: files.reduce((sum, file) => sum + file.size, 0),
-    batchIndex: chunkUploadFiles(files).length,
-    batchCount: chunkUploadFiles(files).length,
-  });
+  try {
+    const urls =
+      config.strategy === "blob-client"
+        ? await uploadViaBlobClient(files, config.access, onProgress)
+        : await uploadViaServer(files, onProgress);
 
-  return urls;
+    onProgress?.(
+      buildProgress({
+        phase: "completed",
+        percent: 100,
+        uploadedFiles: totalFiles,
+        totalFiles,
+        uploadedBytes: totalBytes,
+        totalBytes,
+        batchIndex: totalFiles,
+        batchCount: totalFiles,
+        message: `${urls.length} foto(s) adicionada(s).`,
+      }),
+    );
+
+    return urls;
+  } catch (error) {
+    if (!(error instanceof Error)) {
+      onProgress?.(
+        buildProgress({
+          phase: "error",
+          percent: 0,
+          uploadedFiles: 0,
+          totalFiles,
+          uploadedBytes: 0,
+          totalBytes,
+          batchIndex: 0,
+          batchCount: totalFiles,
+          message: "Falha no upload.",
+        }),
+      );
+    }
+    throw error;
+  }
 }

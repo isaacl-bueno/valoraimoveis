@@ -120,7 +120,7 @@ export default async function HomePage() {
                   <div className="text-center">
                     <i className="fa-solid fa-maximize text-muted-foreground mb-2" />
                     <p className="text-lg font-bold text-ink">
-                      {formatArea(featured.builtArea || featured.area)}
+                      {formatArea(featured.area)}
                     </p>
                     <p className="text-[10px] uppercase text-muted-foreground tracking-widest">Área</p>
                   </div>

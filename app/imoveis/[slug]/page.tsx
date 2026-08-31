@@ -110,13 +110,12 @@ export default async function PropertyDetailsPage({ params }: PageProps) {
               </p>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-8 py-10 border-y border-line">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-8 py-10 border-y border-line">
               {[
                 { icon: "fa-bed", value: property.bedrooms, label: "Quartos" },
                 { icon: "fa-star", value: property.suites, label: "Suítes" },
                 { icon: "fa-bath", value: property.bathrooms, label: "Banheiros" },
                 { icon: "fa-car", value: property.parking, label: "Vagas" },
-                { icon: "fa-maximize", value: formatArea(property.builtArea), label: "Construída" },
                 { icon: "fa-ruler-combined", value: formatArea(property.area), label: "Área Total" },
               ].map((item) => (
                 <div key={item.label} className="flex flex-col items-center text-center gap-3">

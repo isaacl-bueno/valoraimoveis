@@ -50,7 +50,6 @@ type FormState = {
   suites: string;
   bathrooms: string;
   parking: string;
-  builtArea: string;
   area: string;
   landArea: string;
   condo: string;
@@ -83,7 +82,6 @@ function emptyForm(): FormState {
     suites: "0",
     bathrooms: "0",
     parking: "0",
-    builtArea: "",
     area: "",
     landArea: "",
     condo: "",
@@ -117,7 +115,6 @@ function fromProperty(property: Property): FormState {
     suites: String(property.suites),
     bathrooms: String(property.bathrooms),
     parking: String(property.parking),
-    builtArea: property.builtArea ? String(property.builtArea) : "",
     area: property.area ? String(property.area) : "",
     landArea: property.landArea ? String(property.landArea) : "",
     condo: property.condo,
@@ -160,7 +157,8 @@ export function PropertyForm({ initialProperty = null }: PropertyFormProps) {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [draggingPhotos, setDraggingPhotos] = useState(false);
   const [photoUpload, setPhotoUpload] = useState<UploadProgressUpdate | null>(null);
-  const uploadingPhotos = photoUpload !== null;
+  const uploadingPhotos =
+    photoUpload !== null && photoUpload.phase !== "completed" && photoUpload.phase !== "error";
 
   function update<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((current) => ({ ...current, [key]: value }));
@@ -196,7 +194,7 @@ export function PropertyForm({ initialProperty = null }: PropertyFormProps) {
       suites: Number(form.suites) || 0,
       bathrooms: Number(form.bathrooms) || 0,
       parking: Number(form.parking) || 0,
-      builtArea: Number(form.builtArea) || 0,
+      builtArea: initialProperty?.builtArea ?? 0,
       area: Number(form.area) || 0,
       landArea: Number(form.landArea) || 0,
       condo: form.condo,
@@ -289,12 +287,16 @@ export function PropertyForm({ initialProperty = null }: PropertyFormProps) {
         images: [...current.images, ...urls],
       }));
       setMessage(`${urls.length} foto(s) adicionada(s).`);
+      window.setTimeout(() => {
+        setPhotoUpload((current) => (current?.phase === "completed" ? null : current));
+      }, 2500);
     } catch (uploadError) {
       const message =
         uploadError instanceof Error ? uploadError.message : "Falha no upload.";
       setError(message);
-    } finally {
-      setPhotoUpload(null);
+      window.setTimeout(() => {
+        setPhotoUpload((current) => (current?.phase === "error" ? null : current));
+      }, 5000);
     }
   }
 
@@ -484,7 +486,6 @@ export function PropertyForm({ initialProperty = null }: PropertyFormProps) {
                     ["suites", "Suítes"],
                     ["bathrooms", "Banheiros"],
                     ["parking", "Vagas"],
-                    ["builtArea", "Área construída"],
                     ["area", "Área total"],
                     ["landArea", "Área terreno"],
                     ["condo", "Condomínio"],
@@ -576,27 +577,75 @@ export function PropertyForm({ initialProperty = null }: PropertyFormProps) {
             >
               {photoUpload && (
                 <div
-                  className="mb-5 space-y-3 rounded-2xl border border-brand/20 bg-brand/5 p-4"
+                  className={`mb-5 space-y-3 rounded-2xl border p-4 ${
+                    photoUpload.phase === "error"
+                      ? "border-red-200 bg-red-50"
+                      : photoUpload.phase === "completed"
+                        ? "border-green-200 bg-green-50"
+                        : "border-brand/20 bg-brand/5"
+                  }`}
                   role="status"
                   aria-live="polite"
                   aria-label="Progresso do envio de fotos"
                 >
                   <div className="flex items-center justify-between gap-3 text-sm">
-                    <span className="font-medium text-ink">Enviando fotos...</span>
-                    <span className="font-bold text-brand tabular-nums">{photoUpload.percent}%</span>
+                    <span
+                      className={`font-medium ${
+                        photoUpload.phase === "error"
+                          ? "text-red-700"
+                          : photoUpload.phase === "completed"
+                            ? "text-green-700"
+                            : "text-ink"
+                      }`}
+                    >
+                      {photoUpload.message ??
+                        (photoUpload.phase === "preparing"
+                          ? "Preparando envio..."
+                          : photoUpload.phase === "completed"
+                            ? "Upload concluído"
+                            : "Enviando fotos...")}
+                    </span>
+                    {photoUpload.phase !== "error" && (
+                      <span
+                        className={`font-bold tabular-nums ${
+                          photoUpload.phase === "completed" ? "text-green-700" : "text-brand"
+                        }`}
+                      >
+                        {photoUpload.percent}%
+                      </span>
+                    )}
                   </div>
-                  <div className="h-2.5 w-full overflow-hidden rounded-full bg-white/80">
-                    <div
-                      className="h-full rounded-full bg-brand transition-[width] duration-150 ease-out"
-                      style={{ width: `${photoUpload.percent}%` }}
-                    />
-                  </div>
-                  <p className="text-xs text-muted">
-                    {photoUpload.uploadedFiles} de {photoUpload.totalFiles} fotos enviadas
-                    {photoUpload.batchCount > 1
-                      ? ` · lote ${photoUpload.batchIndex} de ${photoUpload.batchCount}`
-                      : ""}
-                  </p>
+                  {photoUpload.phase !== "error" && (
+                    <div className="h-2.5 w-full overflow-hidden rounded-full bg-white/80">
+                      <div
+                        className={`h-full rounded-full transition-[width] duration-150 ease-out ${
+                          photoUpload.phase === "completed" ? "bg-green-600" : "bg-brand"
+                        }`}
+                        style={{ width: `${photoUpload.percent}%` }}
+                      />
+                    </div>
+                  )}
+                  {photoUpload.phase === "uploading" && (
+                    <p className="text-xs text-muted">
+                      {photoUpload.uploadedFiles} de {photoUpload.totalFiles} fotos enviadas
+                      {photoUpload.batchCount > 1
+                        ? ` · lote ${photoUpload.batchIndex} de ${photoUpload.batchCount}`
+                        : ""}
+                    </p>
+                  )}
+                  {photoUpload.phase === "completed" && (
+                    <p className="text-xs text-green-700">
+                      {photoUpload.uploadedFiles} de {photoUpload.totalFiles} fotos enviadas com
+                      sucesso.
+                    </p>
+                  )}
+                  {photoUpload.phase === "error" && (
+                    <p className="text-xs text-red-700">
+                      {photoUpload.uploadedFiles > 0
+                        ? `${photoUpload.uploadedFiles} de ${photoUpload.totalFiles} fotos foram enviadas antes do erro.`
+                        : "Nenhuma foto foi enviada."}
+                    </p>
+                  )}
                 </div>
               )}
               <div
