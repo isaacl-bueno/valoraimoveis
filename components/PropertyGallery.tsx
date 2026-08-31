@@ -10,9 +10,7 @@ type PropertyGalleryProps = {
   title: string;
 };
 
-function isUploadedImage(src: string) {
-  return src.startsWith("/uploads/") || src.startsWith("/api/media/");
-}
+import { isManagedUploadUrl } from "@/lib/storage";
 
 export function PropertyGallery({ images, title }: PropertyGalleryProps) {
   const [open, setOpen] = useState(false);
@@ -71,7 +69,7 @@ export function PropertyGallery({ images, title }: PropertyGalleryProps) {
               fill
               priority
               sizes="(max-width: 768px) 100vw, 50vw"
-              unoptimized={isUploadedImage(images[0])}
+              unoptimized={isManagedUploadUrl(images[0])}
             />
             {images.length > 1 && (
               <div className="md:hidden absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent p-4">
@@ -96,7 +94,7 @@ export function PropertyGallery({ images, title }: PropertyGalleryProps) {
                 alt=""
                 fill
                 sizes="25vw"
-                unoptimized={isUploadedImage(src)}
+                unoptimized={isManagedUploadUrl(src)}
               />
             </button>
           ))}
@@ -113,7 +111,7 @@ export function PropertyGallery({ images, title }: PropertyGalleryProps) {
               alt=""
               fill
               sizes="25vw"
-              unoptimized={isUploadedImage(overlayImage)}
+              unoptimized={isManagedUploadUrl(overlayImage)}
             />
             <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
               <span className="bg-white text-ink px-6 py-3 rounded-full text-sm font-bold shadow-xl group-hover:bg-brand group-hover:text-white transition-all">
@@ -135,7 +133,7 @@ export function PropertyGallery({ images, title }: PropertyGalleryProps) {
               fill
               className="object-contain"
               sizes="96vw"
-              unoptimized={isUploadedImage(images[activeIndex])}
+              unoptimized={isManagedUploadUrl(images[activeIndex])}
             />
 
             <button
@@ -191,7 +189,7 @@ export function PropertyGallery({ images, title }: PropertyGalleryProps) {
                     fill
                     className="object-cover"
                     sizes="96px"
-                    unoptimized={isUploadedImage(src)}
+                    unoptimized={isManagedUploadUrl(src)}
                   />
                 </button>
               ))}

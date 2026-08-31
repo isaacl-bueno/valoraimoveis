@@ -1,8 +1,6 @@
 import { randomUUID } from "crypto";
-import { promises as fs } from "fs";
-import path from "path";
 import { NextResponse } from "next/server";
-import { getUploadDir, getUploadPublicUrl } from "@/lib/storage";
+import { saveUploadedFile } from "@/lib/upload-storage";
 
 export const runtime = "nodejs";
 
@@ -17,9 +15,6 @@ export async function POST(request: Request) {
     if (!files.length) {
       return NextResponse.json({ error: "Nenhum arquivo enviado." }, { status: 400 });
     }
-
-    const uploadDir = getUploadDir();
-    await fs.mkdir(uploadDir, { recursive: true });
 
     const urls: string[] = [];
     for (const file of files) {
@@ -39,8 +34,7 @@ export async function POST(request: Request) {
       const extension = file.name.split(".").pop()?.toLowerCase() || "jpg";
       const filename = `${Date.now()}-${randomUUID().slice(0, 8)}.${extension}`;
       const buffer = Buffer.from(await file.arrayBuffer());
-      await fs.writeFile(path.join(uploadDir, filename), buffer);
-      urls.push(getUploadPublicUrl(filename));
+      urls.push(await saveUploadedFile(filename, buffer));
     }
 
     return NextResponse.json({ urls });

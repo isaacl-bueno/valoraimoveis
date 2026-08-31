@@ -1,7 +1,13 @@
 import path from "path";
 
-/** Vercel/serverless não tem disco persistente; Hostinger VPS e local têm. */
+/** Armazenamento persistente na Vercel via Blob (BLOB_READ_WRITE_TOKEN). */
+export function usesBlobStorage() {
+  return Boolean(process.env.BLOB_READ_WRITE_TOKEN?.trim());
+}
+
+/** Vercel/serverless sem Blob usa /tmp (não persistente); Hostinger VPS e local têm disco. */
 export function usesPersistentStorage() {
+  if (usesBlobStorage()) return false;
   if (process.env.PERSIST_UPLOADS === "true") return true;
   if (process.env.PERSIST_UPLOADS === "false") return false;
   return !process.env.VERCEL && !process.env.AWS_LAMBDA_FUNCTION_NAME;
@@ -30,5 +36,14 @@ export function getUploadPublicUrl(filename: string) {
 }
 
 export function shouldServeUploadsViaApi() {
-  return !usesPersistentStorage();
+  return !usesPersistentStorage() && !usesBlobStorage();
+}
+
+/** URLs de upload gerenciado pelo app (local, /api/media ou Vercel Blob). */
+export function isManagedUploadUrl(src: string) {
+  return (
+    src.startsWith("/uploads/") ||
+    src.startsWith("/api/media/") ||
+    src.includes(".public.blob.vercel-storage.com/")
+  );
 }
