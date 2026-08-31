@@ -1,7 +1,7 @@
 import Image, { type ImageProps } from "next/image";
 import { isManagedUploadUrl } from "@/lib/storage";
 
-/** Next/Image com bypass de otimização para uploads locais, /api/media e Vercel Blob. */
+/** Next/Image com bypass de otimização só para fotos de imóvel (upload). Hero e assets fixos usam Image normal. */
 export function ManagedImage({ unoptimized, alt = "", ...props }: ImageProps) {
   const src = typeof props.src === "string" ? props.src : "";
   return (

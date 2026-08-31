@@ -1,7 +1,7 @@
 import { promises as fs } from "fs";
 import path from "path";
 import { NextResponse } from "next/server";
-import { contentTypeForFilename, findBlobUrlByFilename } from "@/lib/upload-storage";
+import { contentTypeForFilename, readUploadedBlob } from "@/lib/upload-storage";
 import { getUploadDir, shouldServeUploadsViaApi, usesBlobStorage } from "@/lib/storage";
 
 export const runtime = "nodejs";
@@ -18,22 +18,17 @@ export async function GET(_request: Request, context: RouteContext) {
   }
 
   if (usesBlobStorage()) {
-    const blobUrl = await findBlobUrlByFilename(filename);
-    if (blobUrl) {
-      const blobResponse = await fetch(blobUrl);
-      if (!blobResponse.ok) {
-        return NextResponse.json({ error: "Arquivo não encontrado." }, { status: 404 });
-      }
-
-      const buffer = await blobResponse.arrayBuffer();
-      return new NextResponse(buffer, {
-        headers: {
-          "Content-Type": contentTypeForFilename(filename),
-          "Cache-Control": "public, max-age=31536000, immutable",
-        },
-      });
+    const blob = await readUploadedBlob(filename);
+    if (!blob?.stream) {
+      return NextResponse.json({ error: "Arquivo não encontrado." }, { status: 404 });
     }
-    return NextResponse.json({ error: "Arquivo não encontrado." }, { status: 404 });
+
+    return new NextResponse(blob.stream, {
+      headers: {
+        "Content-Type": blob.blob.contentType || contentTypeForFilename(filename),
+        "Cache-Control": "public, max-age=31536000, immutable",
+      },
+    });
   }
 
   if (!shouldServeUploadsViaApi()) {

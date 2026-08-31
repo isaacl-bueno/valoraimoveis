@@ -1,8 +1,31 @@
 import path from "path";
 
-/** Armazenamento persistente na Vercel via Blob (BLOB_READ_WRITE_TOKEN). */
+/** Blob na Vercel: OIDC (BLOB_STORE_ID) ou token legado (BLOB_READ_WRITE_TOKEN). */
 export function usesBlobStorage() {
-  return Boolean(process.env.BLOB_READ_WRITE_TOKEN?.trim());
+  return Boolean(
+    process.env.BLOB_READ_WRITE_TOKEN?.trim() ||
+      process.env.BLOB_STORE_ID?.trim() ||
+      process.env.BLOB_READ_WRITE_TOKEN_STORE_ID?.trim(),
+  );
+}
+
+/** Fotos do site precisam ser públicas; use BLOB_ACCESS=private só se servir via /api/media. */
+export function getBlobAccess(): "public" | "private" {
+  return process.env.BLOB_ACCESS?.trim().toLowerCase() === "private" ? "private" : "public";
+}
+
+/** Opcional: múltiplos Blob stores (BLOB_STORE_ID na Vercel). */
+export function getBlobStoreId() {
+  return (
+    process.env.BLOB_STORE_ID?.trim() ||
+    process.env.BLOB_READ_WRITE_TOKEN_STORE_ID?.trim() ||
+    undefined
+  );
+}
+
+export function getBlobCommandOptions() {
+  const storeId = getBlobStoreId();
+  return storeId ? { storeId } : {};
 }
 
 /** Vercel/serverless sem Blob usa /tmp (não persistente); Hostinger VPS e local têm disco. */
@@ -44,6 +67,7 @@ export function isManagedUploadUrl(src: string) {
   return (
     src.startsWith("/uploads/") ||
     src.startsWith("/api/media/") ||
-    src.includes(".public.blob.vercel-storage.com/")
+    src.includes(".public.blob.vercel-storage.com/") ||
+    src.includes(".private.blob.vercel-storage.com/")
   );
 }
