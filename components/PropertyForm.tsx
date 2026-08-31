@@ -25,7 +25,7 @@ import { Separator } from "@/components/ui/separator";
 import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
 import { TEAM_IMOVEL_FORM, TEAM_IMOVIES } from "@/lib/routes";
-import { uploadPropertyImages } from "@/lib/upload-files";
+import { uploadPropertyImages, type UploadProgressUpdate } from "@/lib/upload-files";
 import type { Property, PropertyStatus } from "@/lib/types";
 
 const ROOM_OPTIONS = ["Sala", "Cozinha", "Escritório", "Lavanderia", "Lavabo", "Dependência"];
@@ -159,6 +159,8 @@ export function PropertyForm({ initialProperty = null }: PropertyFormProps) {
   const [pending, startTransition] = useTransition();
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [draggingPhotos, setDraggingPhotos] = useState(false);
+  const [photoUpload, setPhotoUpload] = useState<UploadProgressUpdate | null>(null);
+  const uploadingPhotos = photoUpload !== null;
 
   function update<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((current) => ({ ...current, [key]: value }));
@@ -272,25 +274,28 @@ export function PropertyForm({ initialProperty = null }: PropertyFormProps) {
   }
 
   async function onUpload(files: FileList | File[] | null) {
-    if (!files?.length) return;
+    if (!files?.length || uploadingPhotos) return;
     setError(null);
+    setMessage(null);
 
-    startTransition(async () => {
-      try {
-        await withLoading(async () => {
-          const urls = await uploadPropertyImages(Array.from(files));
-          setForm((current) => ({
-            ...current,
-            images: [...current.images, ...urls],
-          }));
-          setMessage(`${urls.length} foto(s) adicionada(s).`);
-        }, `Enviando ${files.length} foto(s)...`);
-      } catch (uploadError) {
-        const message =
-          uploadError instanceof Error ? uploadError.message : "Falha no upload.";
-        setError(message);
-      }
-    });
+    const list = Array.from(files);
+
+    try {
+      const urls = await uploadPropertyImages(list, (progress) => {
+        setPhotoUpload(progress);
+      });
+      setForm((current) => ({
+        ...current,
+        images: [...current.images, ...urls],
+      }));
+      setMessage(`${urls.length} foto(s) adicionada(s).`);
+    } catch (uploadError) {
+      const message =
+        uploadError instanceof Error ? uploadError.message : "Falha no upload.";
+      setError(message);
+    } finally {
+      setPhotoUpload(null);
+    }
   }
 
   function onPhotoDragOver(event: React.DragEvent) {
@@ -309,6 +314,7 @@ export function PropertyForm({ initialProperty = null }: PropertyFormProps) {
     event.preventDefault();
     event.stopPropagation();
     setDraggingPhotos(false);
+    if (uploadingPhotos) return;
     const files = Array.from(event.dataTransfer.files).filter((file) =>
       file.type.startsWith("image/"),
     );
@@ -545,7 +551,7 @@ export function PropertyForm({ initialProperty = null }: PropertyFormProps) {
                 type="button"
                 variant="outline"
                 size="sm"
-                disabled={pending}
+                disabled={pending || uploadingPhotos}
                 onClick={() => fileRef.current?.click()}
               >
                 Selecionar fotos
@@ -568,9 +574,36 @@ export function PropertyForm({ initialProperty = null }: PropertyFormProps) {
               onDragLeave={onPhotoDragLeave}
               onDrop={onPhotoDrop}
             >
+              {photoUpload && (
+                <div
+                  className="mb-5 space-y-3 rounded-2xl border border-brand/20 bg-brand/5 p-4"
+                  role="status"
+                  aria-live="polite"
+                  aria-label="Progresso do envio de fotos"
+                >
+                  <div className="flex items-center justify-between gap-3 text-sm">
+                    <span className="font-medium text-ink">Enviando fotos...</span>
+                    <span className="font-bold text-brand tabular-nums">{photoUpload.percent}%</span>
+                  </div>
+                  <div className="h-2.5 w-full overflow-hidden rounded-full bg-white/80">
+                    <div
+                      className="h-full rounded-full bg-brand transition-[width] duration-150 ease-out"
+                      style={{ width: `${photoUpload.percent}%` }}
+                    />
+                  </div>
+                  <p className="text-xs text-muted">
+                    {photoUpload.uploadedFiles} de {photoUpload.totalFiles} fotos enviadas
+                    {photoUpload.batchCount > 1
+                      ? ` · lote ${photoUpload.batchIndex} de ${photoUpload.batchCount}`
+                      : ""}
+                  </p>
+                </div>
+              )}
               <div
                 className={`grid md:grid-cols-3 gap-4 rounded-2xl transition-colors ${
-                  draggingPhotos ? "outline-2 outline-dashed outline-brand bg-brand/5 p-3 -m-3" : ""
+                  draggingPhotos && !uploadingPhotos
+                    ? "outline-2 outline-dashed outline-brand bg-brand/5 p-3 -m-3"
+                    : ""
                 }`}
               >
                 {form.images.map((src, index) => (
@@ -617,7 +650,7 @@ export function PropertyForm({ initialProperty = null }: PropertyFormProps) {
                 <button
                   type="button"
                   onClick={() => fileRef.current?.click()}
-                  disabled={pending}
+                  disabled={pending || uploadingPhotos}
                   className="h-40 rounded-2xl border-2 border-dashed border-line flex flex-col items-center justify-center gap-2 px-4 text-center text-muted hover:border-brand hover:text-brand transition-colors disabled:opacity-50"
                 >
                   <CloudUpload className="h-5 w-5" />
