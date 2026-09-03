@@ -17,6 +17,7 @@ describe("store-backend", () => {
   it("usa arquivo quando banco não está configurado", async () => {
     process.env.NODE_ENV = "production";
     delete process.env.DATABASE_URL;
+    delete process.env.DATABASE_URL_UNPOOLED;
     delete process.env.DB_HOST;
     delete process.env.DB_USER;
     delete process.env.DB_NAME;

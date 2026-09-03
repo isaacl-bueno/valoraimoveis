@@ -128,7 +128,7 @@ export function describeUploadError(error: unknown) {
   if (!(error instanceof Error)) return "Falha no upload.";
 
   if (error.name === "BlobStoreNotFoundError") {
-    return "Blob Store não encontrado. Verifique BLOB_READ_WRITE_TOKEN_STORE_ID na Vercel.";
+    return "Blob Store não encontrado. Verifique BLOB_STORE_ID na Vercel.";
   }
 
   if (error.name === "BlobAccessError") {

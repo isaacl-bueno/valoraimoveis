@@ -4,7 +4,7 @@ type Backend = "memory" | "db";
 
 let resolvedBackend: Backend | null = null;
 
-/** Com DATABASE_URL usa banco; sem banco usa arquivo local (/tmp na Vercel). */
+/** Com DATABASE_URL / DATABASE_URL_UNPOOLED usa banco; sem banco usa arquivo local (/tmp na Vercel). */
 export async function usingMemoryStore(): Promise<boolean> {
   if (resolvedBackend === "memory") return true;
   if (resolvedBackend === "db") return false;

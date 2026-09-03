@@ -1,8 +1,16 @@
 export type DbProvider = "mysql" | "postgres";
 
+/** Neon/Vercel pode injetar DATABASE_URL (pooler) ou só DATABASE_URL_UNPOOLED. */
+export function resolveDatabaseUrl(): string | undefined {
+  return (
+    process.env.DATABASE_URL?.trim() ||
+    process.env.DATABASE_URL_UNPOOLED?.trim() ||
+    undefined
+  );
+}
+
 export function isDatabaseConfigured(): boolean {
-  const url = process.env.DATABASE_URL?.trim();
-  if (url) return true;
+  if (resolveDatabaseUrl()) return true;
 
   const host = process.env.DB_HOST?.trim();
   const user = process.env.DB_USER?.trim();
@@ -17,7 +25,7 @@ export function memoryStoreInDev(): boolean {
 }
 
 export function getDbProvider(): DbProvider {
-  const url = process.env.DATABASE_URL?.trim() ?? "";
+  const url = resolveDatabaseUrl() ?? "";
   if (url.startsWith("mysql://") || url.startsWith("mysql2://")) return "mysql";
   if (url.startsWith("postgresql://") || url.startsWith("postgres://")) return "postgres";
 
@@ -30,12 +38,12 @@ export function getDbProvider(): DbProvider {
 
   if (url) return "postgres";
   throw new Error(
-    "Banco não configurado. Defina DATABASE_URL ou DB_HOST/DB_USER/DB_NAME/DB_PASSWORD (Hostinger MySQL).",
+    "Banco não configurado. Defina DATABASE_URL (ou DATABASE_URL_UNPOOLED) ou DB_HOST/DB_USER/DB_NAME/DB_PASSWORD.",
   );
 }
 
 export function getDatabaseUrl(): string {
-  const direct = process.env.DATABASE_URL?.trim();
+  const direct = resolveDatabaseUrl();
   if (direct) return direct;
 
   const host = process.env.DB_HOST?.trim();
@@ -51,12 +59,12 @@ export function getDatabaseUrl(): string {
   }
 
   throw new Error(
-    "DATABASE_URL não configurada. No Hostinger: hPanel > Bancos de dados MySQL e copie host, usuário, senha e nome do banco.",
+    "DATABASE_URL não configurada. Na Vercel/Neon use DATABASE_URL ou DATABASE_URL_UNPOOLED.",
   );
 }
 
 export function isHostingerMysqlSetup() {
-  return getDbProvider() === "mysql" && Boolean(process.env.DB_HOST || process.env.DATABASE_URL?.includes("mysql"));
+  return getDbProvider() === "mysql" && Boolean(process.env.DB_HOST || resolveDatabaseUrl()?.includes("mysql"));
 }
 
 function convertPlaceholders(sql: string) {
